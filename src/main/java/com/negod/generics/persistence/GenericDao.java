@@ -395,21 +395,7 @@ public class GenericDao<T extends GenericEntity> {
         try {
             FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(em);
             fullTextEntityManager.createIndexer().startAndWait();
-        } catch (InterruptedException ex) {
-            log.error("Failure when indexing " + this.className, ex);
-            return Boolean.FALSE;
-        }
-        return Boolean.TRUE;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Boolean indexDb() {
-        try {
-            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(em);
-            fullTextEntityManager.createIndexer().startAndWait();
+            log.debug("SUCCESS! Done indexing {}", this.className);
         } catch (InterruptedException ex) {
             log.error("Failure when indexing " + this.className, ex);
             return Boolean.FALSE;
