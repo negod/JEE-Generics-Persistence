@@ -4,7 +4,7 @@
     
     <groupId>se.backede.generics</groupId>
     <artifactId>persistence</artifactId>
-    <version>1.1-SNAPSHOT</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
     
     <parent>
@@ -107,7 +107,7 @@
         <connection>https://github.com/negod/JEE-Generics-Persistence.git</connection>
         <developerConnection>scm:git:https://github.com/negod/JEE-Generics-Persistence.git</developerConnection>
         <url>scm:git:https://github.com/negod/JEE-Generics-Persistence.git</url>
-        <tag>HEAD</tag>
+        <tag>persistence-1.1</tag>
     </scm>
     
 </project>
