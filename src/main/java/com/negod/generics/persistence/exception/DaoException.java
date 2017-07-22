@@ -11,10 +11,6 @@ package com.negod.generics.persistence.exception;
  */
 public class DaoException extends Exception {
 
-    public DaoException(String msg) {
-        super(msg);
-    }
-
     public DaoException(String message, Throwable cause) {
         super(message, cause);
     }

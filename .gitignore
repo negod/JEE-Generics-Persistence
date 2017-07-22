@@ -22,3 +22,5 @@
 hs_err_pid*
 /target/
 src/main/resources/app.properties
+nb-configuration.xml
+src/main/resources/app.properties

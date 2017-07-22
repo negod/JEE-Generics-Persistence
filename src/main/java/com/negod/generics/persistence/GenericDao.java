@@ -33,19 +33,18 @@ import org.hibernate.search.query.dsl.QueryBuilder;
 
 /**
  *
- * @author Joakim Johansson ( joakimjohansson@outlook.com )
+ * @author Joakim Backede ( joakim.backede@outlook.com )
  * @param <T> The entity to handle
  */
 @Slf4j
 @Data
-public class GenericDao<T extends GenericEntity> {
-
-    @PersistenceContext(unitName = "persistancePU")
-    private EntityManager em;
+public abstract class GenericDao<T extends GenericEntity> {
 
     private final Class<T> entityClass;
     private final String className;
     private final Set<String> searchFields = new HashSet<>();
+
+    public abstract EntityManager getEntityManager();
 
     /**
      * Constructor
@@ -57,7 +56,7 @@ public class GenericDao<T extends GenericEntity> {
         log.trace("Instantiating GenericDao for entity class {} ", entityClass.getSimpleName());
         if (entityClass == null) {
             log.error("Entity class cannot be null in constructor when instantiating GenericDao");
-            throw new DaoException("Entity class cannot be null in constructor when instantiating GenericDao");
+            throw new DaoException("Entity class cannot be null in constructor when instantiating GenericDao", null);
         } else {
             this.entityClass = entityClass;
             this.className = entityClass.getSimpleName();
@@ -89,7 +88,7 @@ public class GenericDao<T extends GenericEntity> {
     private Optional<CriteriaQuery<T>> getCriteriaQuery() throws DaoException {
         log.trace(" [getCriteriaQuery] Getting criteria query for {}", entityClass.getSimpleName());
         try {
-            CriteriaBuilder criteriaBuilder = em.getCriteriaBuilder();
+            CriteriaBuilder criteriaBuilder = getEntityManager().getCriteriaBuilder();
             return Optional.ofNullable(criteriaBuilder.createQuery(entityClass));
         } catch (Exception e) {
             log.error("Error when getting Criteria Query in Generic Dao");
@@ -107,7 +106,7 @@ public class GenericDao<T extends GenericEntity> {
     public Optional<T> persist(T entity) throws DaoException {
         log.debug(" [persist] Persisting entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
         try {
-            em.persist(entity);
+            getEntityManager().persist(entity);
             return Optional.ofNullable(entity);
         } catch (Exception e) {
             log.error("Error when persisting entity in Generic Dao");
@@ -129,14 +128,14 @@ public class GenericDao<T extends GenericEntity> {
 
             if (entityToUpdate.isPresent()) {
                 log.debug(" [update] Updating entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
-                em.detach(entityToUpdate.get());
+                getEntityManager().detach(entityToUpdate.get());
                 entity.setInternalId(entityToUpdate.get().getInternalId());
                 entity.setUpdatedDate(new Date());
             } else {
                 return Optional.empty();
             }
 
-            return Optional.ofNullable(em.merge(entity));
+            return Optional.ofNullable(getEntityManager().merge(entity));
         } catch (Exception e) {
             log.error("Error when updating entity in Generic Dao");
             throw new DaoException("Error when updating entity ", e);
@@ -156,7 +155,7 @@ public class GenericDao<T extends GenericEntity> {
                 return delete(entity.get());
             } else {
                 log.error("No entity of type: {} found with id: {}", entityClass.getSimpleName(), externalId);
-                throw new NotFoundException("Entity not found for ID: " + externalId);
+                throw new NotFoundException("Entity not found for ID: " + externalId , null);
             }
         } catch (DaoException ex) {
             log.error("Error when deleting entity of type: {} with id: {}. ErrorMessage: {}", entityClass.getSimpleName(), externalId, ex.getMessage());
@@ -175,7 +174,7 @@ public class GenericDao<T extends GenericEntity> {
     protected Boolean delete(T entity) throws DaoException {
         log.debug(" [delete] Deleting entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
         try {
-            em.remove(entity);
+            getEntityManager().remove(entity);
             return Boolean.TRUE;
         } catch (Exception e) {
             log.error(" [delete]  Error when deleting entity in Generic Dao");
@@ -207,7 +206,7 @@ public class GenericDao<T extends GenericEntity> {
             }
 
         } catch (NotFoundException nfex) {
-            throw new NotFoundException(" [getById] Error when getting entity by id ", nfex);
+            throw new NotFoundException("Error when getting entity by id ", nfex);
         } catch (DaoException e) {
             log.error("[getById] Error when getting entity by id: {} in Generic Dao", id);
             throw new DaoException("[getById] Error when getting entity by id ", e);
@@ -226,7 +225,7 @@ public class GenericDao<T extends GenericEntity> {
         log.debug("Getting all values of type {} and filter {} ", entityClass.getSimpleName(), filter.toString());
         try {
 
-            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(em);
+            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
             QueryBuilder qb = fullTextEntityManager.getSearchFactory().buildQueryBuilder().forEntity(entityClass).get();
 
             String[] keys = filter.getSearchFields().toArray(new String[filter.getSearchFields().size()]);
@@ -239,7 +238,7 @@ public class GenericDao<T extends GenericEntity> {
                         .keyword()
                         .wildcard()
                         .onFields(keys)
-                        .matching(searchWord.get().toLowerCase() + "*")
+                        .matching(searchWord.get().toLowerCase())
                         .createQuery();
 
                 Query persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
@@ -256,7 +255,7 @@ public class GenericDao<T extends GenericEntity> {
             }
         } catch (Exception e) {
             log.error(" [getAll] Error when getting filtered list in Generic Dao");
-            throw new DaoException(" [getAll] Error when getting filtered list in Generic Dao", e);
+            throw new DaoException("Error when getting filtered list in Generic Dao", e);
         }
     }
 
@@ -282,9 +281,9 @@ public class GenericDao<T extends GenericEntity> {
 
                 if (Optional.ofNullable(pagination.getListSize()).isPresent()
                         && Optional.ofNullable(pagination.getPage()).isPresent()) {
-                    return executeTypedQueryList(em.createQuery(allQuery), pagination);
+                    return executeTypedQueryList(getEntityManager().createQuery(allQuery), pagination);
                 } else {
-                    return executeTypedQueryList(em.createQuery(allQuery));
+                    return executeTypedQueryList(getEntityManager().createQuery(allQuery));
                 }
             } else {
                 return Optional.empty();
@@ -310,12 +309,12 @@ public class GenericDao<T extends GenericEntity> {
     protected Optional<T> get(CriteriaQuery<T> query) throws DaoException, NotFoundException {
         log.trace(" [get] Getting entity of type {}", entityClass.getSimpleName());
         try {
-            TypedQuery<T> typedQuery = em.createQuery(query);
+            TypedQuery<T> typedQuery = getEntityManager().createQuery(query);
             return executeTypedQuery(typedQuery);
         } catch (NotFoundException ex) {
             return Optional.empty();
         } catch (DaoException e) {
-            log.error(" [get] Error when gettting entity" + query.getResultType());
+            log.error(" [get] Error when gettting entity {} in Generic DAO", query.getResultType());
             throw new DaoException(" [get] Error when gettting entity " + query.getResultType(), e);
         }
     }
@@ -391,10 +390,10 @@ public class GenericDao<T extends GenericEntity> {
             return Optional.ofNullable(result);
         } catch (NoResultException nrex) {
             log.error("Entity not found! [ Get single entity ] for type {} ", entityClass.getSimpleName());
-            throw new NotFoundException(" [executeTypedQuery] Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName());
+            throw new NotFoundException(" [executeTypedQuery] Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), nrex);
         } catch (EntityNotFoundException enfx) {
             log.error("Entity not found! [ Get single entity ] for type {} ", entityClass.getSimpleName());
-            throw new NotFoundException("Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName());
+            throw new NotFoundException("Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), enfx);
         } catch (Exception e) {
             log.error("Error when executing TypedQuery [ Get single entity ] for type {} ", entityClass.getSimpleName(), e);
             throw new DaoException("Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), e);
@@ -407,7 +406,7 @@ public class GenericDao<T extends GenericEntity> {
      */
     public Boolean indexEntity() {
         try {
-            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(em);
+            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
             fullTextEntityManager.createIndexer().startAndWait();
             log.debug("SUCCESS! Done indexing {}", this.className);
         } catch (InterruptedException ex) {
