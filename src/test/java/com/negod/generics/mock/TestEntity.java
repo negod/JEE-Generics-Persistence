@@ -5,15 +5,19 @@
  */
 package com.negod.generics.mock;
 
+import com.negod.generics.persistence.entity.GenericEntity;
 import java.util.Date;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.IndexedEmbedded;
 
 /**
  *
  * @author Joakim Johansson ( joakimjohansson@outlook.com )
  */
-public class TestEntity {
+public class TestEntity extends GenericEntity{
 
-    private String stringValue;
+    @Field(name = "name")
+    private String name;
     private Integer integerValue;
     private Double doubleValue;
     private Long longValue;
@@ -21,6 +25,8 @@ public class TestEntity {
     private String id;
     private Date updatedDate;
     private Long internalId;
+    @IndexedEmbedded
+    private TestEntityEmbedded entity;
 
     public Date getUpdatedDate() {
         return updatedDate;
@@ -47,11 +53,11 @@ public class TestEntity {
     }
 
     public String getStringValue() {
-        return stringValue;
+        return name;
     }
 
     public void setStringValue(String stringValue) {
-        this.stringValue = stringValue;
+        this.name = stringValue;
     }
 
     public Integer getIntegerValue() {
@@ -84,6 +90,14 @@ public class TestEntity {
 
     public void setBooleanValue(Boolean booleanValue) {
         this.booleanValue = booleanValue;
+    }
+
+    public TestEntityEmbedded getEntity() {
+        return entity;
+    }
+
+    public void setEntity(TestEntityEmbedded entity) {
+        this.entity = entity;
     }
 
 }

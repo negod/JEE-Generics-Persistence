@@ -13,10 +13,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.NoResultException;
-import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -64,16 +65,38 @@ public abstract class GenericDao<T extends GenericEntity> {
         }
     }
 
-    public final Set<String> extractSearchFields(Class<T> entityClass) {
+    public final Set<String> extractSearchFields(Class<?> entityClass) throws DaoException {
+
+        String fieldAnnotation = org.hibernate.search.annotations.Field.class.getName();
+        String indexedEmbeddedAnnotation = org.hibernate.search.annotations.IndexedEmbedded.class.getName();
+
         Set<String> fields = new HashSet<>();
         Field[] declaredFields = entityClass.getDeclaredFields();
         for (Field field : declaredFields) {
+
             Annotation[] annotations = field.getAnnotations();
             for (Annotation annotation : annotations) {
-                String annotationName = org.hibernate.search.annotations.Field.class.getName();
-                if (annotation.annotationType().getName().equals(annotationName)) {
+
+                if (annotation.annotationType().getName().equals(fieldAnnotation)) {
                     fields.add(field.getName());
                 }
+                if (annotation.annotationType().getName().equals(indexedEmbeddedAnnotation)) {
+                    try {
+
+                        Class<?> clazz = field.getType();
+                        Object entity = clazz.newInstance();
+                        Set<String> extractSearchFields = extractSearchFields(entity.getClass());
+
+                        for (String extractSearchField : extractSearchFields) {
+                            fields.add(field.getName().concat(".").concat(extractSearchField));
+                        }
+
+                    } catch (IllegalAccessException | InstantiationException | IllegalArgumentException ex) {
+                        log.error("Error whgen extracting serachFields {}", ex);
+                        throw new DaoException("Error whgen extracting serachFields {}", ex);
+                    }
+                }
+
             }
         }
         return fields;
@@ -155,7 +178,7 @@ public abstract class GenericDao<T extends GenericEntity> {
                 return delete(entity.get());
             } else {
                 log.error("No entity of type: {} found with id: {}", entityClass.getSimpleName(), externalId);
-                throw new NotFoundException("Entity not found for ID: " + externalId , null);
+                throw new NotFoundException("Entity not found for ID: " + externalId, null);
             }
         } catch (DaoException ex) {
             log.error("Error when deleting entity of type: {} with id: {}. ErrorMessage: {}", entityClass.getSimpleName(), externalId, ex.getMessage());

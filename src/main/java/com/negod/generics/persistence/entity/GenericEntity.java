@@ -46,16 +46,14 @@ import org.hibernate.annotations.GenericGenerator;
 public class GenericEntity implements Serializable {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
-    @GenericGenerator(name = "native", strategy = "native")
-    @Column(name = "id")
-    private Long internalId;
-
     @NotNull(message = "External id cannot be null and should be set to UUID")
-    @Column(unique = true, updatable = false, insertable = true, name = "extId")
+    @Column(unique = true, updatable = false, insertable = true, name = "id")
     @Pattern(regexp = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}")
     @XmlElement
     private String id;
+
+    @Column(name = "internalId")
+    private Long internalId;
 
     @NotNull(message = "Updated date cannot be null and all CRUD operations must have a date")
     @Column(name = "updatedDate")
