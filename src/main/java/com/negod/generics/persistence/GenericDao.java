@@ -9,6 +9,7 @@ import com.negod.generics.persistence.search.Pagination;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -61,11 +62,17 @@ public abstract class GenericDao<T extends GenericEntity> {
         } else {
             this.entityClass = entityClass;
             this.className = entityClass.getSimpleName();
-            this.searchFields.addAll(extractSearchFields(entityClass));
+            this.searchFields.addAll(extractSearchFields(entityClass, null));
         }
     }
 
-    private final Set<String> extractSearchFields(Class<?> entityClass) throws DaoException {
+    private final Set<String> extractSearchFields(Class<?> entityClass, Set<String> alreadyExtractedClasses) throws DaoException {
+
+        // Used to avoid StackOverflow One class can only be extracted once
+        if (alreadyExtractedClasses == null) {
+            alreadyExtractedClasses = new HashSet<>(Arrays.asList(new String[]{entityClass.getName()}));
+        }
+
         try {
 
             String fieldAnnotation = org.hibernate.search.annotations.Field.class.getName();
@@ -90,8 +97,15 @@ public abstract class GenericDao<T extends GenericEntity> {
                             clazz = (Class<?>) stringListType.getActualTypeArguments()[0];
                         }
 
+                        // To avoid StackOverFlow
+                        if (alreadyExtractedClasses.contains(clazz.getName())) {
+                            continue;
+                        } else {
+                            alreadyExtractedClasses.add(clazz.getName());
+                        }
+
                         Object entity = clazz.newInstance();
-                        Set<String> extractSearchFields = extractSearchFields(entity.getClass());
+                        Set<String> extractSearchFields = extractSearchFields(entity.getClass(), alreadyExtractedClasses);
 
                         for (String extractSearchField : extractSearchFields) {
                             fields.add(field.getName().concat(".").concat(extractSearchField));

@@ -348,14 +348,14 @@ public class GenericDaoIT {
     @Ignore
     @Test
     public void testCanEqual() {
-        System.out.println("canEqual");
-        Object other = null;
-        GenericDao instance = null;
-        boolean expResult = false;
-        boolean result = instance.canEqual(other);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+//        System.out.println("canEqual");
+//        Object other = null;
+//        GenericDao instance = null;
+//        boolean expResult = false;
+//        boolean result = instance.canEqual(other);
+//        assertEquals(expResult, result);
+//        // TODO review the generated test code and remove the default call to fail.
+//        fail("The test case is a prototype.");
     }
 
     /**
