@@ -75,9 +75,8 @@ public class GenericDaoIT {
     public void testExtractSearchFields() throws DaoException {
         System.out.println("extractSearchFields");
         GenericDaoImpl instance = new GenericDaoImpl(TestEntity.class);
-        Set<String> expResult = new HashSet<>(Arrays.asList(new String[]{"name", "entity.value"}));
-        Set<String> result = instance.extractSearchFields(TestEntity.class);
-        assertEquals(expResult, result);
+        Set<String> expResult = new HashSet<>(Arrays.asList(new String[]{"entitySet.value", "name", "entity.value"}));
+        assertEquals(expResult, instance.getSearchFields());
     }
 
     /**

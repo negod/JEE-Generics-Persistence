@@ -7,6 +7,7 @@ package com.negod.generics.mock;
 
 import com.negod.generics.persistence.entity.GenericEntity;
 import java.util.Date;
+import java.util.Set;
 import org.hibernate.search.annotations.Field;
 import org.hibernate.search.annotations.IndexedEmbedded;
 
@@ -14,7 +15,7 @@ import org.hibernate.search.annotations.IndexedEmbedded;
  *
  * @author Joakim Johansson ( joakimjohansson@outlook.com )
  */
-public class TestEntity extends GenericEntity{
+public class TestEntity extends GenericEntity {
 
     @Field(name = "name")
     private String name;
@@ -25,8 +26,12 @@ public class TestEntity extends GenericEntity{
     private String id;
     private Date updatedDate;
     private Long internalId;
+
     @IndexedEmbedded
     private TestEntityEmbedded entity;
+
+    @IndexedEmbedded
+    private Set<TestEntityEmbedded> entitySet;
 
     public Date getUpdatedDate() {
         return updatedDate;
@@ -98,6 +103,22 @@ public class TestEntity extends GenericEntity{
 
     public void setEntity(TestEntityEmbedded entity) {
         this.entity = entity;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Set<TestEntityEmbedded> getEntitySet() {
+        return entitySet;
+    }
+
+    public void setEntitySet(Set<TestEntityEmbedded> entitySet) {
+        this.entitySet = entitySet;
     }
 
 }
