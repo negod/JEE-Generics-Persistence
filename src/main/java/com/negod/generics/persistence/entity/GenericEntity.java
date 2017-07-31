@@ -13,8 +13,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
 import javax.persistence.Column;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
@@ -30,7 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.search.annotations.DocumentId;
 
 /**
  *
@@ -46,6 +44,7 @@ import org.hibernate.annotations.GenericGenerator;
 public class GenericEntity implements Serializable {
 
     @Id
+    @DocumentId
     @NotNull(message = "External id cannot be null and should be set to UUID")
     @Column(unique = true, updatable = false, insertable = true, name = "id")
     @Pattern(regexp = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}")
