@@ -5,8 +5,11 @@
  */
 package com.negod.generics.persistence.mapper;
 
-import com.negod.generics.persistence.entity.GenericEntity;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.dozer.DozerBeanMapper;
 import org.dozer.loader.api.BeanMappingBuilder;
 import static org.dozer.loader.api.TypeMappingOptions.mapEmptyString;
@@ -19,15 +22,34 @@ import static org.dozer.loader.api.TypeMappingOptions.mapNull;
 @Slf4j
 public class Mapper {
 
-    private static final DozerBeanMapper mapper = new DozerBeanMapper();
+    private static final DozerBeanMapper MAPPER = new DozerBeanMapper();
     private static final Mapper INSTANCE = new Mapper();
 
     public static Mapper getInstance() {
         return INSTANCE;
     }
 
+    protected Mapper() {
+        MAPPER.addMapping(beanMappingBuilder());
+    }
+
+    private BeanMappingBuilder beanMappingBuilder() {
+        return new BeanMappingBuilder() {
+            @Override
+            protected void configure() {
+                CacheManager manager = CacheManager.getInstance();
+                Cache cache = manager.getCache("entity_registry");
+                List keys = cache.getKeys();
+                for (Object key : keys) {
+                    Class<?> entityClass = (Class) cache.get(key).getValue();
+                    mapping(entityClass, entityClass, mapNull(false), mapEmptyString(false));
+                }
+            }
+        };
+    }
+
     public DozerBeanMapper getMapper() {
-        return mapper;
+        return MAPPER;
     }
 
 }

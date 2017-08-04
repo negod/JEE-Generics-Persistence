@@ -5,7 +5,7 @@ import com.negod.generics.persistence.entity.GenericEntity_;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.exception.NotFoundException;
 import com.negod.generics.persistence.mapper.BaseMapper;
-import com.negod.generics.persistence.mapper.DaoMapper;
+import com.negod.generics.persistence.mapper.Mapper;
 import com.negod.generics.persistence.search.GenericFilter;
 import com.negod.generics.persistence.search.Pagination;
 import com.negod.generics.persistence.update.ObjectUpdate;
@@ -45,13 +45,13 @@ import org.hibernate.search.query.dsl.QueryBuilder;
  */
 @Slf4j
 @Data
-public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
-
+public abstract class GenericDao<T extends GenericEntity> {
+    
     private final Class<T> entityClass;
     private final String className;
     private final Set<String> searchFields = new HashSet<>();
     private BaseMapper mapper;
-
+    
     public abstract EntityManager getEntityManager();
 
     /**
@@ -61,7 +61,6 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
      * @throws DaoException
      */
     public GenericDao(Class entityClass) throws DaoException {
-        super(entityClass);
         log.trace("Instantiating GenericDao for entity class {} ", entityClass.getSimpleName());
         if (entityClass == null) {
             log.error("Entity class cannot be null in constructor when instantiating GenericDao");
@@ -73,33 +72,33 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
             this.mapper = new BaseMapper(entityClass, entityClass);
         }
     }
-
+    
     private final Set<String> extractSearchFields(Class<?> entityClass, Set<String> alreadyExtractedClasses) throws DaoException {
 
         // Used to avoid StackOverflow One class can only be extracted once
         if (alreadyExtractedClasses == null) {
             alreadyExtractedClasses = new HashSet<>(Arrays.asList(new String[]{entityClass.getName()}));
         }
-
+        
         try {
-
+            
             String fieldAnnotation = org.hibernate.search.annotations.Field.class.getName();
             String indexedEmbeddedAnnotation = org.hibernate.search.annotations.IndexedEmbedded.class.getName();
-
+            
             Set<String> fields = new HashSet<>();
             Field[] declaredFields = entityClass.getDeclaredFields();
             for (Field field : declaredFields) {
-
+                
                 Annotation[] annotations = field.getAnnotations();
                 for (Annotation annotation : annotations) {
-
+                    
                     if (annotation.annotationType().getName().equals(fieldAnnotation)) {
                         fields.add(field.getName());
                     }
                     if (annotation.annotationType().getName().equals(indexedEmbeddedAnnotation)) {
-
+                        
                         Class<?> clazz = field.getType();
-
+                        
                         if (clazz.equals(Set.class) || clazz.equals(List.class)) {
                             ParameterizedType stringListType = (ParameterizedType) field.getGenericType();
                             clazz = (Class<?>) stringListType.getActualTypeArguments()[0];
@@ -111,20 +110,20 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
                         } else {
                             alreadyExtractedClasses.add(clazz.getName());
                         }
-
+                        
                         Object entity = clazz.newInstance();
                         Set<String> extractSearchFields = extractSearchFields(entity.getClass(), alreadyExtractedClasses);
-
+                        
                         for (String extractSearchField : extractSearchFields) {
                             fields.add(field.getName().concat(".").concat(extractSearchField));
                         }
-
+                        
                     }
-
+                    
                 }
             }
             return fields;
-
+            
         } catch (IllegalAccessException | InstantiationException | IllegalArgumentException ex) {
             log.error("Error whgen extracting serachFields {}", ex);
             throw new DaoException("Error whgen extracting serachFields {}", ex);
@@ -175,11 +174,11 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
      * @throws DaoException
      */
     public Optional<T> update(T entity) throws DaoException {
+        log.debug(" [update] Updating entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
         try {
             Optional<T> entityToUpdate = getById(entity.getId());
             if (entityToUpdate.isPresent()) {
-                super.map(entity, entityToUpdate.get());
-                log.debug(" [update] Updating entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
+                Mapper.getInstance().getMapper().map(entity, entityToUpdate.get());
                 entityToUpdate.get().setUpdatedDate(new Date());
             } else {
                 return Optional.empty();
@@ -229,7 +228,7 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
             log.error(" [delete]  Error when deleting entity in Generic Dao");
             throw new DaoException(" [delete]  Error when deleting entity ", e);
         }
-
+        
     }
 
     /**
@@ -242,9 +241,9 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
     public Optional<T> getById(String id) throws DaoException, NotFoundException {
         log.debug("Getting entity of type {} with id {} ", entityClass.getSimpleName(), id);
         try {
-
+            
             Optional<CriteriaQuery<T>> data = this.getCriteriaQuery();
-
+            
             if (data.isPresent()) {
                 CriteriaQuery<T> cq = data.get();
                 Root<T> entity = cq.from(entityClass);
@@ -253,7 +252,7 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
             } else {
                 return Optional.empty();
             }
-
+            
         } catch (NotFoundException nfex) {
             throw new NotFoundException("Error when getting entity by id ", nfex);
         } catch (DaoException e) {
@@ -261,31 +260,31 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
             throw new DaoException("[getById] Error when getting entity by id ", e);
         }
     }
-
+    
     public Optional updateObject(String id, ObjectUpdate update) throws DaoException {
         log.debug("Updating Entity {} with id {} ", entityClass.getSimpleName(), id);
         Optional<T> entity = getById(id);
-
+        
         if (entity.isPresent()) {
-
+            
             log.trace("Entity is fetched", entityClass.getSimpleName(), id);
-
+            
             CacheManager manager = CacheManager.getInstance();
             Cache cache = manager.getCache("entity_registry");
-
+            
             if (cache.isKeyInCache(update.getObject())) {
-
+                
                 try {
                     Element get = cache.get(update.getObject());
-
+                    
                     Class<?> entityClass = (Class) get.getValue();
                     Optional updateEntity = getById(update.getObjectId(), entityClass);
-
+                    
                     Field field = entity.get().getClass().getDeclaredField(update.getObject());
                     field.setAccessible(true);
                     field.set(entity.get(), updateEntity.get());
                     field.setAccessible(false);
-
+                    
                     return Optional.ofNullable(update(entity.get()));
                 } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
                     log.error("Error when updating Object to Entity {}", ex);
@@ -329,14 +328,14 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
     public Optional<List<T>> getAll(GenericFilter filter) throws DaoException {
         log.debug("Getting all values of type {} and filter {} ", entityClass.getSimpleName(), filter.toString());
         try {
-
+            
             FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
             QueryBuilder qb = fullTextEntityManager.getSearchFactory().buildQueryBuilder().forEntity(entityClass).get();
-
+            
             String[] keys = filter.getSearchFields().toArray(new String[filter.getSearchFields().size()]);
             Optional<String> searchWord = Optional.ofNullable(filter.getGlobalSearchWord());
             Optional<Pagination> pagination = Optional.ofNullable(filter.getPagination());
-
+            
             if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent()) {
                 log.trace(" [getAll] Executing Lucene wildcard search, KEYS: {} VALUE: {}", keys, searchWord.get().toLowerCase());
                 org.apache.lucene.search.Query query = qb
@@ -345,12 +344,12 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
                         .onFields(keys)
                         .matching(searchWord.get().toLowerCase())
                         .createQuery();
-
+                
                 Query persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
-
+                
                 persistenceQuery.setMaxResults(filter.getPagination().getListSize());
                 persistenceQuery.setFirstResult(filter.getPagination().getListSize() * filter.getPagination().getPage());
-
+                
                 return Optional.ofNullable(persistenceQuery.getResultList());
             } else if (pagination.isPresent()) {
                 return getAll(filter.getPagination());
@@ -377,13 +376,13 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
         try {
             Optional<CriteriaQuery<T>> data = this.getCriteriaQuery();
             if (data.isPresent()) {
-
+                
                 CriteriaQuery<T> cq = data.get();
                 Root<T> rootEntity = cq.from(entityClass);
                 Order order = new OrderImpl(rootEntity.get(GenericEntity_.updatedDate), true);
                 cq.orderBy(order);
                 CriteriaQuery<T> allQuery = cq.select(rootEntity);
-
+                
                 if (Optional.ofNullable(pagination.getListSize()).isPresent()
                         && Optional.ofNullable(pagination.getPage()).isPresent()) {
                     return executeTypedQueryList(getEntityManager().createQuery(allQuery), pagination);
@@ -398,7 +397,7 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
             throw new DaoException(" [getAll] Error when getting all in Generic Dao", e);
         }
     }
-
+    
     public Optional<List<T>> getAll() throws DaoException {
         return getAll(new Pagination());
     }
@@ -455,12 +454,12 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
     protected Optional<List<T>> executeTypedQueryList(TypedQuery<T> query, Pagination pagination) throws DaoException {
         log.trace(" [executeTypedQueryList] Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ]", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
         try {
-
+            
             if (Optional.ofNullable(pagination).isPresent()) {
-
+                
                 Optional<Integer> listSize = Optional.ofNullable(pagination.getListSize());
                 Optional<Integer> page = Optional.ofNullable(pagination.getPage());
-
+                
                 if (listSize.isPresent() && page.isPresent()) {
                     query.setMaxResults(pagination.getListSize());
                     query.setFirstResult(pagination.getListSize() * pagination.getPage());
@@ -468,9 +467,9 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
                     log.error("Pagination present but listsize or page missing {} returning empty list", pagination);
                     return Optional.empty();
                 }
-
+                
             }
-
+            
             List<T> resultList = query.getResultList();
             return Optional.ofNullable(resultList);
         } catch (Exception e) {
@@ -520,5 +519,5 @@ public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
         }
         return Boolean.TRUE;
     }
-
+    
 }
