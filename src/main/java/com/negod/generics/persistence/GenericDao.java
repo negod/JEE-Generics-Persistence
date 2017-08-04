@@ -4,13 +4,15 @@ import com.negod.generics.persistence.entity.GenericEntity;
 import com.negod.generics.persistence.entity.GenericEntity_;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.exception.NotFoundException;
+import com.negod.generics.persistence.mapper.BaseMapper;
+import com.negod.generics.persistence.mapper.DaoMapper;
 import com.negod.generics.persistence.search.GenericFilter;
 import com.negod.generics.persistence.search.Pagination;
+import com.negod.generics.persistence.update.ObjectUpdate;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +29,9 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Root;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheManager;
+import net.sf.ehcache.Element;
 import org.apache.commons.lang3.ArrayUtils;
 import org.hibernate.jpa.criteria.OrderImpl;
 import org.hibernate.search.jpa.FullTextEntityManager;
@@ -40,11 +45,12 @@ import org.hibernate.search.query.dsl.QueryBuilder;
  */
 @Slf4j
 @Data
-public abstract class GenericDao<T extends GenericEntity> {
+public abstract class GenericDao<T extends GenericEntity> extends DaoMapper {
 
     private final Class<T> entityClass;
     private final String className;
     private final Set<String> searchFields = new HashSet<>();
+    private BaseMapper mapper;
 
     public abstract EntityManager getEntityManager();
 
@@ -55,6 +61,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @throws DaoException
      */
     public GenericDao(Class entityClass) throws DaoException {
+        super(entityClass);
         log.trace("Instantiating GenericDao for entity class {} ", entityClass.getSimpleName());
         if (entityClass == null) {
             log.error("Entity class cannot be null in constructor when instantiating GenericDao");
@@ -63,6 +70,7 @@ public abstract class GenericDao<T extends GenericEntity> {
             this.entityClass = entityClass;
             this.className = entityClass.getSimpleName();
             this.searchFields.addAll(extractSearchFields(entityClass, null));
+            this.mapper = new BaseMapper(entityClass, entityClass);
         }
     }
 
@@ -169,17 +177,14 @@ public abstract class GenericDao<T extends GenericEntity> {
     public Optional<T> update(T entity) throws DaoException {
         try {
             Optional<T> entityToUpdate = getById(entity.getId());
-
             if (entityToUpdate.isPresent()) {
+                super.map(entity, entityToUpdate.get());
                 log.debug(" [update] Updating entity of type {} with values {} ", entityClass.getSimpleName(), entity.toString());
-                getEntityManager().detach(entityToUpdate.get());
-                entity.setInternalId(entityToUpdate.get().getInternalId());
-                entity.setUpdatedDate(new Date());
+                entityToUpdate.get().setUpdatedDate(new Date());
             } else {
                 return Optional.empty();
             }
-
-            return Optional.ofNullable(getEntityManager().merge(entity));
+            return Optional.ofNullable(getEntityManager().merge(entityToUpdate.get()));
         } catch (Exception e) {
             log.error("Error when updating entity in Generic Dao");
             throw new DaoException("Error when updating entity ", e);
@@ -252,6 +257,62 @@ public abstract class GenericDao<T extends GenericEntity> {
         } catch (NotFoundException nfex) {
             throw new NotFoundException("Error when getting entity by id ", nfex);
         } catch (DaoException e) {
+            log.error("[getById] Error when getting entity by id: {} in Generic Dao", id);
+            throw new DaoException("[getById] Error when getting entity by id ", e);
+        }
+    }
+
+    public Optional updateObject(String id, ObjectUpdate update) throws DaoException {
+        log.debug("Updating Entity {} with id {} ", entityClass.getSimpleName(), id);
+        Optional<T> entity = getById(id);
+
+        if (entity.isPresent()) {
+
+            log.trace("Entity is fetched", entityClass.getSimpleName(), id);
+
+            CacheManager manager = CacheManager.getInstance();
+            Cache cache = manager.getCache("entity_registry");
+
+            if (cache.isKeyInCache(update.getObject())) {
+
+                try {
+                    Element get = cache.get(update.getObject());
+
+                    Class<?> entityClass = (Class) get.getValue();
+                    Optional updateEntity = getById(update.getObjectId(), entityClass);
+
+                    Field field = entity.get().getClass().getDeclaredField(update.getObject());
+                    field.setAccessible(true);
+                    field.set(entity.get(), updateEntity.get());
+                    field.setAccessible(false);
+
+                    return Optional.ofNullable(update(entity.get()));
+                } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
+                    log.error("Error when updating Object to Entity {}", ex);
+                    throw new DaoException("Error when updating Object to Entity {}", ex);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Get an entity by its external id
+     *
+     * @param id The external id (GUID) of the entity
+     * @return The entity that matches the id
+     * @throws DaoException
+     */
+    public Optional getById(String id, Class clazz) throws DaoException, NotFoundException {
+        log.debug("Getting entity of type {} with id {} ", entityClass.getSimpleName(), id);
+        try {
+            CriteriaBuilder criteriaBuilder = getEntityManager().getCriteriaBuilder();
+            CriteriaQuery cq = criteriaBuilder.createQuery(clazz);
+            Root entity = cq.from(clazz);
+            cq.where(entity.get(GenericEntity_.id).in(id));
+            TypedQuery typedQuery = getEntityManager().createQuery(cq);
+            return Optional.ofNullable(typedQuery.getSingleResult());
+        } catch (Exception e) {
             log.error("[getById] Error when getting entity by id: {} in Generic Dao", id);
             throw new DaoException("[getById] Error when getting entity by id ", e);
         }

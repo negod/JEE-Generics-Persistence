@@ -19,7 +19,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     
         <!-- JPA DEPENDENCIES-->
-        <hibernate.core.version>5.1.0.Final</hibernate.core.version>
+        <hibernate.core.version>5.0.7.Final</hibernate.core.version>
         <hibernate.validator.version>5.2.4.Final</hibernate.validator.version>
         <hibernate.search.version>5.5.3.Final</hibernate.search.version>
         <hibernate.search.infispan.version>5.5.2.Final</hibernate.search.infispan.version>
@@ -50,21 +50,9 @@
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-ehcache</artifactId>
-            <version>${hibernate.core.version}</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate</groupId>
             <artifactId>hibernate-search-orm</artifactId>
             <version>${hibernate.search.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate</groupId>
-            <artifactId>hibernate-search-infinispan</artifactId>
-            <version>${hibernate.search.infispan.version}</version>    
-            <scope>provided</scope>   
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
@@ -72,7 +60,20 @@
             <version>${hibernate.core.version}</version>
             <scope>provided</scope>
         </dependency>
-
+        <dependency>
+            <groupId>net.sf.ehcache</groupId>
+            <artifactId>ehcache-core</artifactId>
+            <version>2.4.7</version>
+            <scope>provided</scope>
+        </dependency>
+        
+        <!-- MAPPING -->
+        <dependency>
+            <groupId>net.sf.dozer</groupId>
+            <artifactId>dozer</artifactId>
+            <version>5.5.1</version>
+        </dependency>
+        
     </dependencies>
     
     <build>

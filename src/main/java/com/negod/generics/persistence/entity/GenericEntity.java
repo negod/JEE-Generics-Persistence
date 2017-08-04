@@ -12,6 +12,7 @@ package com.negod.generics.persistence.entity;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.UUID;
+import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
@@ -41,6 +42,7 @@ import org.hibernate.search.annotations.DocumentId;
 @Getter
 @Setter
 @EqualsAndHashCode
+@Cacheable(value = true)
 public class GenericEntity implements Serializable {
 
     @Id
@@ -51,8 +53,8 @@ public class GenericEntity implements Serializable {
     @XmlElement
     private String id;
 
-    @Column(name = "internalId")
-    private Long internalId;
+    //@Column(name = "internalId")
+    //private Long internalId;
 
     @NotNull(message = "Updated date cannot be null and all CRUD operations must have a date")
     @Column(name = "updatedDate")
