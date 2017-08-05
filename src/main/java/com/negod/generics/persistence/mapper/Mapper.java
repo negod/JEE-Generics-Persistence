@@ -5,11 +5,11 @@
  */
 package com.negod.generics.persistence.mapper;
 
+import com.negod.generics.persistence.entity.GenericEntity_;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
 import org.dozer.DozerBeanMapper;
 import org.dozer.loader.api.BeanMappingBuilder;
 import static org.dozer.loader.api.TypeMappingOptions.mapEmptyString;
@@ -42,7 +42,7 @@ public class Mapper {
                 List keys = cache.getKeys();
                 for (Object key : keys) {
                     Class<?> entityClass = (Class) cache.get(key).getValue();
-                    mapping(entityClass, entityClass, mapNull(false), mapEmptyString(false));
+                    mapping(entityClass, entityClass, mapNull(false), mapEmptyString(false)).exclude("id").exclude("updatedDate");
                 }
             }
         };
