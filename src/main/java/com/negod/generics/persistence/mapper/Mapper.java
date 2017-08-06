@@ -5,8 +5,9 @@
  */
 package com.negod.generics.persistence.mapper;
 
-import com.negod.generics.persistence.entity.GenericEntity_;
+import com.negod.generics.persistence.entity.DefaultCacheNames;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
@@ -37,12 +38,17 @@ public class Mapper {
         return new BeanMappingBuilder() {
             @Override
             protected void configure() {
+                log.debug("Configuring Mapper for Entityclasses");
                 CacheManager manager = CacheManager.getInstance();
-                Cache cache = manager.getCache("entity_registry");
-                List keys = cache.getKeys();
-                for (Object key : keys) {
-                    Class<?> entityClass = (Class) cache.get(key).getValue();
-                    mapping(entityClass, entityClass, mapNull(false), mapEmptyString(false)).exclude("id").exclude("updatedDate");
+                Optional<Cache> cache = Optional.ofNullable(manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE));
+                if (cache.isPresent()) {
+                    List keys = cache.get().getKeys();
+                    for (Object key : keys) {
+                        Class<?> clazz = (Class) key;
+                        mapping(clazz, clazz, mapNull(false), mapEmptyString(false)).exclude("id").exclude("updatedDate");
+                    }
+                } else {
+                    log.error("GenericMapper: Cache [ entity_registry ] not initialized!, Continuing....");
                 }
             }
         };

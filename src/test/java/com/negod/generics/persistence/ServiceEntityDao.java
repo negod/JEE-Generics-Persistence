@@ -5,27 +5,23 @@
  */
 package com.negod.generics.persistence;
 
-import com.negod.generics.mock.TestEntity;
+import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.persistence.exception.DaoException;
 import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 
 /**
  *
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
-public class GenericDaoImpl extends GenericDao<TestEntity> {
+public class ServiceEntityDao extends GenericDao<ServiceEntity> {
 
-    @PersistenceContext(name = "testPU")
-    EntityManager em;
-
-    public GenericDaoImpl(Class entityClass) throws DaoException {
-        super(TestEntity.class);
+    public ServiceEntityDao() throws DaoException {
+        super(ServiceEntity.class);
     }
 
     @Override
     public EntityManager getEntityManager() {
-        return em;
+        return PersistenceUnitTest.getEntityManager();
     }
 
 }

@@ -6,15 +6,18 @@
 package com.negod.generics.mock;
 
 import com.negod.generics.persistence.entity.GenericEntity;
-import java.util.Date;
-import java.util.Set;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import lombok.Data;
 import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.IndexedEmbedded;
 
 /**
  *
  * @author Joakim Johansson ( joakimjohansson@outlook.com )
  */
+@Data
+@Entity
+@Table(name = "TEST_ENTITY", schema = "TEST")
 public class TestEntity extends GenericEntity {
 
     @Field(name = "name")
@@ -23,102 +26,11 @@ public class TestEntity extends GenericEntity {
     private Double doubleValue;
     private Long longValue;
     private Boolean booleanValue;
-    private String id;
-    private Date updatedDate;
-    private Long internalId;
 
-    @IndexedEmbedded
-    private TestEntityEmbedded entity;
-
-    @IndexedEmbedded
-    private Set<TestEntityEmbedded> entitySet;
-
-    public Date getUpdatedDate() {
-        return updatedDate;
-    }
-
-    public void setUpdatedDate(Date updatedDate) {
-        this.updatedDate = updatedDate;
-    }
-
-    public Long getInternalId() {
-        return internalId;
-    }
-
-    public void setInternalId(Long internalId) {
-        this.internalId = internalId;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getStringValue() {
-        return name;
-    }
-
-    public void setStringValue(String stringValue) {
-        this.name = stringValue;
-    }
-
-    public Integer getIntegerValue() {
-        return integerValue;
-    }
-
-    public void setIntegerValue(Integer integerValue) {
-        this.integerValue = integerValue;
-    }
-
-    public Double getDoubleValue() {
-        return doubleValue;
-    }
-
-    public void setDoubleValue(Double doubleValue) {
-        this.doubleValue = doubleValue;
-    }
-
-    public Long getLongValue() {
-        return longValue;
-    }
-
-    public void setLongValue(Long longValue) {
-        this.longValue = longValue;
-    }
-
-    public Boolean getBooleanValue() {
-        return booleanValue;
-    }
-
-    public void setBooleanValue(Boolean booleanValue) {
-        this.booleanValue = booleanValue;
-    }
-
-    public TestEntityEmbedded getEntity() {
-        return entity;
-    }
-
-    public void setEntity(TestEntityEmbedded entity) {
-        this.entity = entity;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Set<TestEntityEmbedded> getEntitySet() {
-        return entitySet;
-    }
-
-    public void setEntitySet(Set<TestEntityEmbedded> entitySet) {
-        this.entitySet = entitySet;
-    }
+//    @IndexedEmbedded
+//    private TestEntityEmbedded entity;
+//
+//    @IndexedEmbedded
+//    private Set<TestEntityEmbedded> entitySet;
 
 }
