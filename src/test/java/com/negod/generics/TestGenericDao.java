@@ -280,6 +280,68 @@ public class TestGenericDao extends ServiceEntityDao {
 
     }
 
+    //TODO
+    @Test
+    public void testManyToOneDelete() throws DaoException {
+
+        log.debug("Testing deletion of OneToOne Object");
+
+        String SERVICE_ID = "";
+        String DOMAIN_ID = "";
+
+        //Create a ServiceEntity
+        ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> persistedService = persist(entity);
+        getEntityManager().getTransaction().commit();
+        SERVICE_ID = persistedService.get().getId();
+        assert persistedService.isPresent();
+        assert persistedService.get().getDomain() == null;
+
+        //Create a DomainEntity
+        DomainEntity domain = ServiceEntitiesMock.getDomainEntity();
+        getEntityManager().getTransaction().begin();
+        Optional<DomainEntity> persistedDomain = DOMAIN_DAO.persist(domain);
+        getEntityManager().getTransaction().commit();
+        DOMAIN_ID = persistedDomain.get().getId();
+        assert persistedDomain.isPresent();
+
+        //Update 
+        ObjectUpdate objectUpdate = ServiceEntitiesMock.getObjectUpdate();
+        objectUpdate.setObject("domain");
+        objectUpdate.setObjectId(DOMAIN_ID);
+        objectUpdate.setType(UpdateType.ADD);
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> updatedServiceEntity = update(SERVICE_ID, objectUpdate);
+        getEntityManager().getTransaction().commit();
+        assert updatedServiceEntity.isPresent();
+
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
+        getEntityManager().getTransaction().commit();
+        assert updatedServiceById.isPresent();
+        assert updatedServiceById.get().getDomain() != null;
+        assert updatedServiceById.get().getDomain().getId().equals(DOMAIN_ID);
+
+        //Delete the DomainEntity
+        ObjectUpdate deleteDomain = ServiceEntitiesMock.getObjectUpdate();
+        objectUpdate.setObject("domain");
+        objectUpdate.setObjectId(DOMAIN_ID);
+        objectUpdate.setType(UpdateType.DELETE);
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> seriveWithDeletedDomain = update(SERVICE_ID, objectUpdate);
+        getEntityManager().getTransaction().commit();
+        assert seriveWithDeletedDomain.isPresent();
+        
+        //Get the persisted ServiceEntity and assert domain removed
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> serviceWithDomainDeleted = getById(SERVICE_ID);
+        getEntityManager().getTransaction().commit();
+        assert serviceWithDomainDeleted.isPresent();
+        assert serviceWithDomainDeleted.get().getDomain() == null;
+
+    }
+
     @Test
     public void testGetById() throws DaoException {
 
@@ -307,7 +369,7 @@ public class TestGenericDao extends ServiceEntityDao {
 
     @Test
     public void testManyToManyUpdateWithObject() throws DaoException {
-        
+
         log.debug("Testing update with OneToOne Object");
 
         String SERVICE_ID = "";
@@ -371,6 +433,136 @@ public class TestGenericDao extends ServiceEntityDao {
 
         System.out.println(updatedServiceById.get().getUsers().toString());
         assert updatedServiceById.get().getUsers().size() == 2;
+
+        UserEntity[] userArray = (UserEntity[]) updatedServiceById.get().getUsers().toArray(new UserEntity[updatedServiceById.get().getUsers().size()]);
+
+        if (userArray[0].getId().equals(USER_ID_1)) {
+            assert userArray[1].getId().equals(USER_ID_2);
+        } else {
+            assert userArray[0].getId().equals(USER_ID_2);
+            assert userArray[1].getId().equals(USER_ID_1);
+        }
+
+    }
+
+    @Test
+    public void testManyToManyDeleteWithObject() throws DaoException {
+
+        log.debug("Testing update with OneToOne Object");
+
+        String SERVICE_ID = "";
+        String USER_ID_1 = "";
+        String USER_ID_2 = "";
+        String USERS_REGION = "users";
+
+        //Create a Service
+        ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> persistedService = persist(entity);
+        getEntityManager().getTransaction().commit();
+        SERVICE_ID = persistedService.get().getId();
+        assert persistedService.isPresent();
+        assert persistedService.get().getDomain() == null;
+
+        //Create User 1
+        UserEntity user1 = ServiceEntitiesMock.getUserEntity();
+        getEntityManager().getTransaction().begin();
+        Optional<UserEntity> persistedUser1 = USER_DAO.persist(user1);
+        getEntityManager().getTransaction().commit();
+        USER_ID_1 = persistedUser1.get().getId();
+        assert persistedUser1.isPresent();
+
+        //Create User 2
+        UserEntity user2 = ServiceEntitiesMock.getUserEntity();
+        getEntityManager().getTransaction().begin();
+        Optional<UserEntity> persistedUser2 = USER_DAO.persist(user2);
+        getEntityManager().getTransaction().commit();
+        USER_ID_2 = persistedUser2.get().getId();
+        assert persistedUser2.isPresent();
+
+        //Create UpdateObjects for the UserEntities
+        Set<ObjectUpdate> objectUpdateSet = ServiceEntitiesMock.getObjectUpdateSet();
+
+        ObjectUpdate objectUpdate1 = ServiceEntitiesMock.getObjectUpdate();
+        objectUpdate1.setObject(USERS_REGION);
+        objectUpdate1.setObjectId(USER_ID_1);
+        objectUpdate1.setType(UpdateType.ADD);
+
+        ObjectUpdate objectUpdate2 = ServiceEntitiesMock.getObjectUpdate();
+        objectUpdate2.setObject(USERS_REGION);
+        objectUpdate2.setObjectId(USER_ID_2);
+        objectUpdate2.setType(UpdateType.ADD);
+
+        objectUpdateSet.add(objectUpdate1);
+        objectUpdateSet.add(objectUpdate2);
+
+        //Update ServiceEntity with UserEntities
+        getEntityManager().getTransaction().begin();
+        Boolean updatedServiceEntity = update(SERVICE_ID, objectUpdateSet);
+        getEntityManager().getTransaction().commit();
+        assert updatedServiceEntity;
+
+        //Assert Users added
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
+        getEntityManager().getTransaction().commit();
+        assert updatedServiceById.isPresent();
+        assert updatedServiceById.get().getUsers() != null;
+
+        System.out.println(updatedServiceById.get().getUsers().toString());
+        assert updatedServiceById.get().getUsers().size() == 2;
+
+        UserEntity[] userArray = (UserEntity[]) updatedServiceById.get().getUsers().toArray(new UserEntity[updatedServiceById.get().getUsers().size()]);
+
+        if (userArray[0].getId().equals(USER_ID_1)) {
+            assert userArray[1].getId().equals(USER_ID_2);
+        } else {
+            assert userArray[0].getId().equals(USER_ID_2);
+            assert userArray[1].getId().equals(USER_ID_1);
+        }
+
+        //Delete User1
+        ObjectUpdate deleteUser1 = ServiceEntitiesMock.getObjectUpdate();
+        deleteUser1.setObject(USERS_REGION);
+        deleteUser1.setObjectId(USER_ID_1);
+        deleteUser1.setType(UpdateType.DELETE);
+
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> deletedUser1 = update(SERVICE_ID, deleteUser1);
+        getEntityManager().getTransaction().commit();
+        assert deletedUser1.isPresent();
+
+        //Assert User1 deleted
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> serviceByIdUser1Removed = getById(SERVICE_ID);
+        getEntityManager().getTransaction().commit();
+        assert serviceByIdUser1Removed.isPresent();
+        assert serviceByIdUser1Removed.get().getUsers() != null;
+        assert serviceByIdUser1Removed.get().getUsers().size() == 1;
+
+        userArray = (UserEntity[]) updatedServiceById.get().getUsers().toArray(new UserEntity[updatedServiceById.get().getUsers().size()]);
+        assert userArray[0].getId().equals(USER_ID_2);
+
+        //Delete User2
+        ObjectUpdate deleteUser2 = ServiceEntitiesMock.getObjectUpdate();
+        deleteUser2.setObject(USERS_REGION);
+        deleteUser2.setObjectId(USER_ID_2);
+        deleteUser2.setType(UpdateType.DELETE);
+
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> deletedUser2 = update(SERVICE_ID, deleteUser2);
+        getEntityManager().getTransaction().commit();
+        assert deletedUser2.isPresent();
+
+        //Assert User1 and User2 deleted
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> serviceByIdUser2Removed = getById(SERVICE_ID);
+        getEntityManager().getTransaction().commit();
+        assert serviceByIdUser2Removed.isPresent();
+        assert serviceByIdUser2Removed.get().getUsers() != null;
+
+        System.out.println(serviceByIdUser2Removed.get().getUsers().toString());
+        assert serviceByIdUser2Removed.get().getUsers().size() == 0;
 
     }
 

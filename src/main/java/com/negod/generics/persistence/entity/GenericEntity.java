@@ -53,9 +53,6 @@ public class GenericEntity implements Serializable {
     @XmlElement
     private String id;
 
-    //@Column(name = "internalId")
-    //private Long internalId;
-
     @NotNull(message = "Updated date cannot be null and all CRUD operations must have a date")
     @Column(name = "updatedDate")
     @Temporal(javax.persistence.TemporalType.TIMESTAMP)

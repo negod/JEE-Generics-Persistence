@@ -22,77 +22,53 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 import com.negod.generics.mock.TestEntity;
 import com.negod.generics.mock.EntityMock;
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
  *
  * @author Joakim Johansson ( joakimjohansson@outlook.com )
  */
-@Ignore
-@RunWith(Parameterized.class)
+@RunWith(value = Parameterized.class)
 public class TestTypeCheck {
 
-    public static final Boolean BOOLEAN_VALUE = EntityMock.BOOLEAN_VALUE;
-    public static final Double DOUBLE_VALUE = EntityMock.DOUBLE_VALUE;
-    public static final Integer INTEGER_VALUE = EntityMock.INTEGER_VALUE;
-    public static final Long LONG_VALUE = EntityMock.LONG_VALUE;
-    public static final Date UPDATED_DATE = EntityMock.UPDATED_DATE;
-    public static final String STRING_VALUE = EntityMock.STRING_VALUE;
-    public static final TestEntity ENTITY = EntityMock.getEntity();
-
-    @Parameter
-    public static Object INPUT;
+    @Parameter(value = 0)
+    public Object BOOLEAN_VALUE;
+    
+    @Parameter(value = 1)
+    public Object DOUBLE_VALUE;
+    @Parameter(value = 2)
+    public Object INTEGER_VALUE;
+    @Parameter(value = 3)
+    public Object LONG_VALUE;
+    @Parameter(value = 4)
+    public Object UPDATED_DATE;
+    @Parameter(value = 5)
+    public Object STRING_VALUE;
+    @Parameter(value = 6)
+    public Object ENTITY;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    @Parameters(name = "test for {0}")
-    public static List<Object> data() {
-        List<Object> list = new ArrayList<>();
-        list.add(BOOLEAN_VALUE);
-        list.add(DOUBLE_VALUE);
-        list.add(INTEGER_VALUE);
-        list.add(LONG_VALUE);
-        list.add(UPDATED_DATE);
-        list.add(STRING_VALUE);
-        list.add(ENTITY);
-        list.add(null);
-        return list;
+    public TestTypeCheck() {
     }
 
-    @Ignore
-    @Test()
-    public void testGetDataWrongObject() throws TypeCastException {
-        TypeCheck instance = new TypeCheck(INPUT);
-        Optional current = instance.getAsObject();
-
-        if (INPUT != null) {
-            assertTrue(current.isPresent());
-        } else {
-            assertFalse(current.isPresent());
-        }
-
-        if (!(INPUT instanceof Double)) {
-            current = instance.getAsDouble();
-            assertFalse(current.isPresent());
-        }
-
-        if (!(INPUT instanceof Integer)) {
-            current = instance.getAsInteger();
-            assertFalse(current.isPresent());
-        }
-
-        if (!(INPUT instanceof Long)) {
-            current = instance.getAsLong();
-            assertFalse(current.isPresent());
-        }
-
-        if (!(INPUT instanceof String) && INPUT != null) {
-            current = instance.getAsString();
-            assertTrue(current.isPresent());
-            assertTrue(INPUT.equals(current.get().toString()));
-        }
-
+    @Parameters(name = "{index} test for {0}")
+    public static Collection<Object[]> data() {
+        Object[] objectArray = new Object[]{
+            EntityMock.BOOLEAN_VALUE,
+            EntityMock.DOUBLE_VALUE,
+            EntityMock.INTEGER_VALUE,
+            EntityMock.LONG_VALUE,
+            EntityMock.UPDATED_DATE,
+            EntityMock.STRING_VALUE,
+            EntityMock.getEntity(),
+        };
+        return Arrays.<Object[]>asList(objectArray);
     }
+    
+    
 
     /**
      * Test of getAsObject method, of class TypeCheck.
