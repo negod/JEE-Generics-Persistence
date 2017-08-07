@@ -41,11 +41,10 @@ CREATE TABLE IF NOT EXISTS user (
 
 CREATE TABLE IF NOT EXISTS service_user (
     internalId BIGINT AUTO_INCREMENT NOT NULL, 
-    id VARCHAR(36) NOT NULL, 
-    updatedDate TIMESTAMP NOT NULL, 
+    updatedDate TIMESTAMP NOT NULL DEFAULT NOW(), 
     service_id VARCHAR(36) NOT NULL, 
     user_id VARCHAR(36) NOT NULL, 
-    PRIMARY KEY (id, service_id, user_id), 
+    PRIMARY KEY (internalId, service_id, user_id), 
     UNIQUE (internalId)
 );
 

@@ -1,7 +1,6 @@
 package com.negod.generics.persistence;
 
 import com.negod.generics.persistence.entity.DefaultCacheNames;
-import com.negod.generics.persistence.entity.EntityRegistry;
 import com.negod.generics.persistence.entity.GenericEntity;
 import com.negod.generics.persistence.entity.GenericEntity_;
 import com.negod.generics.persistence.exception.DaoException;
@@ -38,6 +37,7 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.jpa.criteria.OrderImpl;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.Search;
@@ -214,12 +214,13 @@ public abstract class GenericDao<T extends GenericEntity> {
 
                     Class<?> clazz = field.getType();
                     if (clazz.equals(Set.class) || clazz.equals(List.class)) {
-                        ParameterizedType stringListType = (ParameterizedType) field.getGenericType();
-                        clazz = (Class<?>) stringListType.getActualTypeArguments()[0];
+                        ParameterizedType objectListType = (ParameterizedType) field.getGenericType();
+                        clazz = (Class<?>) objectListType.getActualTypeArguments()[0];
 
                         if (clazz.getName().equals(updateEntity.get().getClass().getName())) {
-                            Method add = Set.class.getDeclaredMethod("ad", entityClassToUpdate.getClass());
-                            add.invoke(clazz, updateEntity.get());
+                            Method add = entity.get().getClass().getDeclaredMethod("get" + StringUtils.capitalize(update.getObject()));
+                            Set invoke = (Set) add.invoke(entity.get());
+                            invoke.add(updateEntity.get());
                         }
                     } else {
                         field.set(entity.get(), updateEntity.get());

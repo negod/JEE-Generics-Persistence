@@ -78,9 +78,9 @@ public class ServiceEntity extends GenericEntity {
     @IndexedEmbedded(depth = 3)
     @JoinTable(name = "service_user",
             joinColumns = {
-                @JoinColumn(name = "service_id")},
+                @JoinColumn(name = "service_id", referencedColumnName = "id")},
             inverseJoinColumns = {
-                @JoinColumn(name = "user_id")})
+                @JoinColumn(name = "user_id", referencedColumnName = "id")})
     @ManyToMany(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "service.users")
     private Set<UserEntity> users = new HashSet<>();

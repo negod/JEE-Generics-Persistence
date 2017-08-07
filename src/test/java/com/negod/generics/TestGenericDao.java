@@ -307,7 +307,7 @@ public class TestGenericDao extends ServiceEntityDao {
 
     @Test
     public void testManyToManyUpdateWithObject() throws DaoException {
-
+        
         log.debug("Testing update with OneToOne Object");
 
         String SERVICE_ID = "";
