@@ -7,7 +7,6 @@ package com.negod.generics.persistence.search;
  */
 
 
-import com.negod.generics.persistence.search.Pagination;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Data;

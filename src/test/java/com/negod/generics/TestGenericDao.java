@@ -37,6 +37,7 @@ public class TestGenericDao extends ServiceEntityDao {
 
     public TestGenericDao() throws DaoException {
         CACHE.init();
+       
     }
 
     @Test
@@ -51,7 +52,7 @@ public class TestGenericDao extends ServiceEntityDao {
     public void testPersist() throws DaoException {
         log.debug("Testing persist");
 
-        String NAME = "NAME1";
+        String NAME = "PersistName";
 
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName(NAME);
@@ -68,7 +69,7 @@ public class TestGenericDao extends ServiceEntityDao {
     public void testUpdate() throws DaoException {
         log.debug("Testing update");
 
-        String NAME = "NAME2";
+        String NAME = "PersistName2";
         String UPDATED_NAME = "UPDATED_NAME";
         String ID = "";
 
@@ -332,7 +333,7 @@ public class TestGenericDao extends ServiceEntityDao {
         Optional<ServiceEntity> seriveWithDeletedDomain = update(SERVICE_ID, objectUpdate);
         getEntityManager().getTransaction().commit();
         assert seriveWithDeletedDomain.isPresent();
-        
+
         //Get the persisted ServiceEntity and assert domain removed
         getEntityManager().getTransaction().begin();
         Optional<ServiceEntity> serviceWithDomainDeleted = getById(SERVICE_ID);
@@ -562,7 +563,7 @@ public class TestGenericDao extends ServiceEntityDao {
         assert serviceByIdUser2Removed.get().getUsers() != null;
 
         System.out.println(serviceByIdUser2Removed.get().getUsers().toString());
-        assert serviceByIdUser2Removed.get().getUsers().size() == 0;
+        assert serviceByIdUser2Removed.get().getUsers().isEmpty();
 
     }
 

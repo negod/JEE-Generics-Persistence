@@ -80,7 +80,7 @@ public abstract class GenericDao<T extends GenericEntity> {
     }
 
     private final Set<String> extractSearchFields(Class<?> entityClass, Set<String> alreadyExtractedClasses) throws DaoException {
-        log.trace("Extracting searchfields for entity class {} [ DatabaseLayer ] method: extractSearchFields", entityClass.getSimpleName());
+        log.trace("Extracting searchfields for entity class {} [ DatabaseLayer ] method:extractSearchFields", entityClass.getSimpleName());
         // Used to avoid StackOverflow One class can only be extracted once
         if (alreadyExtractedClasses == null) {
             alreadyExtractedClasses = new HashSet<>(Arrays.asList(new String[]{entityClass.getName()}));
@@ -120,9 +120,7 @@ public abstract class GenericDao<T extends GenericEntity> {
                         for (String extractSearchField : extractSearchFields) {
                             fields.add(field.getName().concat(".").concat(extractSearchField));
                         }
-
                     }
-
                 }
             }
             return fields;
@@ -183,87 +181,94 @@ public abstract class GenericDao<T extends GenericEntity> {
         return true;
     }
 
+    private Optional<Class<?>> getEntityClassToUpdate(String objectName) {
+        CacheManager manager = CacheManager.getInstance();
+        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        if (cache.isKeyInCache(entityClass)) {
+            Element get = cache.get(entityClass);
+            HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+            Class<?> entityClassToUpdate = cachedData.get(objectName);
+            return Optional.ofNullable(entityClassToUpdate);
+        } else {
+            return Optional.empty();
+        }
+    }
+
     /**
      *
      * @param id The id of the Entity to update
-     * @param update The data of the object to ADD, REMOVE or UPDATE
+     * @param updateInstructions The data of the object to ADD, REMOVE or UPDATE
      * @return
      * @throws DaoException
      */
-    public Optional<T> update(String id, ObjectUpdate update) throws DaoException {
+    public Optional<T> update(String id, ObjectUpdate updateInstructions) throws DaoException {
         log.debug("Updating Entity {} with id {} [ DatabaseLayer ] method:update", entityClass.getSimpleName(), id);
-        Optional<T> entity = getById(id);
+        Optional<T> entityForUpdate = getById(id);
 
-        if (entity.isPresent()) {
+        if (entityForUpdate.isPresent()) {
+            log.trace("Entity is fetched [ DatabaseLayer ] method:update", entityClass.getSimpleName(), id);
+            try {
+                Optional<Class<?>> entityClassToUpdate = getEntityClassToUpdate(updateInstructions.getObject());
+                if (entityClassToUpdate.isPresent()) {
 
-            log.trace("Entity is fetched [ DatabaseLayer ]", entityClass.getSimpleName(), id);
-
-            CacheManager manager = CacheManager.getInstance();
-            Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
-
-            if (cache.isKeyInCache(entityClass)) {
-
-                try {
-                    Element get = cache.get(entityClass);
-
-                    HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
-
-                    Class<?> entityClassToUpdate = cachedData.get(update.getObject());
-                    Optional updateEntity = getById(update.getObjectId(), entityClassToUpdate);
-
-                    Field field = entity.get().getClass().getDeclaredField(update.getObject());
+                    Optional entity = getById(updateInstructions.getObjectId(), entityClassToUpdate.get());
+                    Field field = entityForUpdate.get().getClass().getDeclaredField(updateInstructions.getObject());
                     field.setAccessible(true);
 
                     Class<?> clazz = field.getType();
                     if (clazz.equals(Set.class) || clazz.equals(List.class)) {
-                        ParameterizedType objectListType = (ParameterizedType) field.getGenericType();
-                        clazz = (Class<?>) objectListType.getActualTypeArguments()[0];
-
-                        if (clazz.getName().equals(updateEntity.get().getClass().getName())) {
-
-                            Method add = entity.get().getClass().getDeclaredMethod("get" + StringUtils.capitalize(update.getObject()));
-                            Set invoke = (Set) add.invoke(entity.get());
-
-                            switch (update.getType()) {
-                                case ADD:
-                                case UPDATE:
-                                    invoke.add(updateEntity.get());
-                                    break;
-                                case DELETE:
-                                    invoke.remove(updateEntity.get());
-                                    break;
-                                default:
-                                    throw new AssertionError();
-                            }
-                        }
+                        invokeGenericSetData(field, entity, entityForUpdate, updateInstructions);
                     } else {
-
-                        switch (update.getType()) {
-                            case ADD:
-                            case UPDATE:
-                                field.set(entity.get(), updateEntity.get());
-                                break;
-                            case DELETE:
-                                field.set(entity.get(), null);
-                                break;
-                            default:
-                                throw new AssertionError();
-                        }
+                        invokeGenericObjectData(field, entity, entityForUpdate, updateInstructions);
                     }
-
                     field.setAccessible(false);
-
-                    return Optional.ofNullable(entity.get());
-                } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex) {
-                    log.error("Error when updating Object to Entity {} [ DatabaseLayer ]", ex);
-                    throw new DaoException("Error when updating Object to Entity {}", ex);
-                } catch (NoSuchMethodException | InvocationTargetException ex) {
-                    log.error("Error when updating Object to Entity {} [ DatabaseLayer ]", ex);
-                    throw new DaoException("Error when updating Object to Entity {}", ex);
                 }
+
+                return Optional.ofNullable(entityForUpdate.get());
+            } catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | NoSuchMethodException | InvocationTargetException ex) {
+                log.error("Error when updating Object to Entity {} [ DatabaseLayer ]", ex);
+                throw new DaoException("Error when updating Object to Entity {}", ex);
             }
         }
         return Optional.empty();
+    }
+
+    private void invokeGenericObjectData(Field field, Optional updateEntity, Optional<T> entity, ObjectUpdate update) throws IllegalArgumentException, IllegalAccessException, AssertionError {
+        log.trace("Invoking ObjectData on entity {} with Object {} [ DatabaseLayer ] method:invokeGenericObjectData", entityClass.getSimpleName(), entity.get().getClass().getSimpleName());
+        switch (update.getType()) {
+            case ADD:
+            case UPDATE:
+                field.set(entity.get(), updateEntity.get());
+                break;
+            case DELETE:
+                field.set(entity.get(), null);
+                break;
+            default:
+                throw new AssertionError();
+        }
+    }
+
+    private void invokeGenericSetData(Field field, Optional updateEntity, Optional<T> entity, ObjectUpdate update) throws InvocationTargetException, SecurityException, IllegalAccessException, IllegalArgumentException, AssertionError, NoSuchMethodException {
+        log.trace("Invoking ListData on entity {} with Object {} [ DatabaseLayer ] method:invokeGenericSetData", entityClass.getSimpleName(), entity.get().getClass().getSimpleName());
+
+        ParameterizedType objectListType = (ParameterizedType) field.getGenericType();
+        Class<?> clazz = (Class<?>) objectListType.getActualTypeArguments()[0];
+        if (clazz.getName().equals(updateEntity.get().getClass().getName())) {
+            Method add = entity.get().getClass().getDeclaredMethod("get" + StringUtils.capitalize(update.getObject()));
+            Set entitySet = (Set) add.invoke(entity.get());
+
+            switch (update.getType()) {
+                case ADD:
+                case UPDATE:
+                    entitySet.add(updateEntity.get());
+                    break;
+                case DELETE:
+                    entitySet.remove(updateEntity.get());
+                    break;
+                default:
+                    throw new AssertionError();
+            }
+        }
     }
 
     /**
@@ -394,8 +399,8 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @return All persisted entities
      * @throws DaoException
      */
-    public Optional<List<T>> getAll(GenericFilter filter) throws DaoException {
-        log.debug("Getting all values of type {} and filter {} [ DatabaseLayer ] method:getAll ( with generic filter )", entityClass.getSimpleName(), filter.toString());
+    public Optional<List<T>> search(GenericFilter filter) throws DaoException {
+        log.debug("Getting all values of type {} and filter {} [ DatabaseLayer ] method:search ", entityClass.getSimpleName(), filter.toString());
         try {
 
             FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
@@ -405,8 +410,8 @@ public abstract class GenericDao<T extends GenericEntity> {
             Optional<String> searchWord = Optional.ofNullable(filter.getGlobalSearchWord());
             Optional<Pagination> pagination = Optional.ofNullable(filter.getPagination());
 
-            if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent()) {
-                log.trace(" [getAll] Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:getAll", keys, searchWord.get().toLowerCase());
+            if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent() && pagination.isPresent()) {
+                log.trace("Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:search", keys, searchWord.get().toLowerCase());
                 org.apache.lucene.search.Query query = qb
                         .keyword()
                         .wildcard()
@@ -420,10 +425,9 @@ public abstract class GenericDao<T extends GenericEntity> {
                 persistenceQuery.setFirstResult(filter.getPagination().getListSize() * filter.getPagination().getPage());
 
                 return Optional.ofNullable(persistenceQuery.getResultList());
-            } else if (pagination.isPresent()) {
-                return getAll(filter.getPagination());
             } else {
-                log.error(" [getAll] No pagination, search fields or search word present, aborting search [ DatabaseLayer ] method:getAll");
+                log.error("Either pagination, search fields or search word or all is not present, aborting search [ DatabaseLayer ] method:search, "
+                        + "Present? [Pagination:{} SearchWord:{} SearchFields:{} ]", pagination.isPresent(), searchWord.isPresent(), ArrayUtils.isEmpty(keys));
                 return Optional.empty();
             }
         } catch (Exception e) {

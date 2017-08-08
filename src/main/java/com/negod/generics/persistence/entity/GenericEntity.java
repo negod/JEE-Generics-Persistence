@@ -46,7 +46,6 @@ import org.hibernate.search.annotations.DocumentId;
 public class GenericEntity implements Serializable {
 
     @Id
-    @DocumentId
     @NotNull(message = "External id cannot be null and should be set to UUID")
     @Column(unique = true, updatable = false, insertable = true, name = "id")
     @Pattern(regexp = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}")

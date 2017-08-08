@@ -8,6 +8,8 @@ package com.negod.generics.mock;
 import com.negod.generics.mock.service.DomainEntity;
 import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.mock.service.UserEntity;
+import com.negod.generics.persistence.search.GenericFilter;
+import com.negod.generics.persistence.search.Pagination;
 import com.negod.generics.persistence.update.ObjectUpdate;
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +32,7 @@ public class ServiceEntitiesMock {
         entity.setName(UUID.randomUUID().toString());
         return entity;
     }
-    
+
     public static UserEntity getUserEntity() {
         UserEntity entity = new UserEntity();
         entity.setName(UUID.randomUUID().toString());
@@ -45,6 +47,17 @@ public class ServiceEntitiesMock {
     public static Set<ObjectUpdate> getObjectUpdateSet() {
         Set<ObjectUpdate> objUpd = new HashSet<>();
         return objUpd;
+    }
+
+    public static GenericFilter getGenericFilter(Set<String> searchFields, String globalSearchWord, Integer listsize, Integer page) {
+        GenericFilter filter = new GenericFilter();
+        filter.setGlobalSearchWord(globalSearchWord);
+        filter.setSearchFields(searchFields);
+        Pagination pagination = new Pagination();
+        pagination.setListSize(listsize);
+        pagination.setPage(page);
+        filter.setPagination(pagination);
+        return filter;
     }
 
 }
