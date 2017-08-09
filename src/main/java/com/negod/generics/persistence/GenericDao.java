@@ -10,13 +10,11 @@ import com.negod.generics.persistence.mapper.Mapper;
 import com.negod.generics.persistence.search.GenericFilter;
 import com.negod.generics.persistence.search.Pagination;
 import com.negod.generics.persistence.update.ObjectUpdate;
-import com.negod.generics.persistence.update.UpdateType;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
+import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,6 +24,7 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.NoResultException;
+import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -35,6 +34,7 @@ import javax.persistence.criteria.Root;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
+import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang3.ArrayUtils;
@@ -58,7 +58,8 @@ public abstract class GenericDao<T extends GenericEntity> {
     private final Set<String> searchFields = new HashSet<>();
     private final BaseMapper mapper;
 
-    public abstract EntityManager getEntityManager();
+    @PersistenceContext
+    EntityManager entityManager;
 
     /**
      * Constructor
@@ -66,69 +67,41 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param entityClass The entityclass the DAO will handle
      * @throws DaoException
      */
-    public GenericDao(Class entityClass) throws DaoException {
-        log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method: constructor", entityClass.getSimpleName());
-        if (entityClass == null) {
-            log.error("Entity class cannot be null in constructor when instantiating GenericDao [ DatabaseLayer ]");
-            throw new DaoException("Entity class cannot be null in constructor when instantiating GenericDao ", null);
-        } else {
-            this.entityClass = entityClass;
-            this.className = entityClass.getSimpleName();
-            this.searchFields.addAll(extractSearchFields(entityClass, null));
-            this.mapper = new BaseMapper(entityClass, entityClass);
-        }
+    public GenericDao() {
+        this.entityClass = extractEntityClass();
+        log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
+
+        this.className = entityClass.getSimpleName();
+        this.searchFields.addAll(getSearchFieldsFromCache());
+        this.mapper = new BaseMapper(entityClass, entityClass);
     }
 
-    private final Set<String> extractSearchFields(Class<?> entityClass, Set<String> alreadyExtractedClasses) throws DaoException {
-        log.trace("Extracting searchfields for entity class {} [ DatabaseLayer ] method:extractSearchFields", entityClass.getSimpleName());
-        // Used to avoid StackOverflow One class can only be extracted once
-        if (alreadyExtractedClasses == null) {
-            alreadyExtractedClasses = new HashSet<>(Arrays.asList(new String[]{entityClass.getName()}));
-        }
+    private Class<T> extractEntityClass() {
+        Type genericSuperClass = getClass().getGenericSuperclass();
 
-        try {
-            String fieldAnnotation = org.hibernate.search.annotations.Field.class.getName();
-            String indexedEmbeddedAnnotation = org.hibernate.search.annotations.IndexedEmbedded.class.getName();
-            Set<String> fields = new HashSet<>();
-            Field[] declaredFields = entityClass.getDeclaredFields();
-            for (Field field : declaredFields) {
-                Annotation[] annotations = field.getAnnotations();
-                for (Annotation annotation : annotations) {
-
-                    if (annotation.annotationType().getName().equals(fieldAnnotation)) {
-                        fields.add(field.getName());
-                    }
-                    if (annotation.annotationType().getName().equals(indexedEmbeddedAnnotation)) {
-
-                        Class<?> clazz = field.getType();
-
-                        if (clazz.equals(Set.class) || clazz.equals(List.class)) {
-                            ParameterizedType stringListType = (ParameterizedType) field.getGenericType();
-                            clazz = (Class<?>) stringListType.getActualTypeArguments()[0];
-                        }
-
-                        // To avoid StackOverFlow
-                        if (alreadyExtractedClasses.contains(clazz.getName())) {
-                            continue;
-                        } else {
-                            alreadyExtractedClasses.add(clazz.getName());
-                        }
-
-                        Object entity = clazz.newInstance();
-                        Set<String> extractSearchFields = extractSearchFields(entity.getClass(), alreadyExtractedClasses);
-
-                        for (String extractSearchField : extractSearchFields) {
-                            fields.add(field.getName().concat(".").concat(extractSearchField));
-                        }
-                    }
-                }
+        ParameterizedType parametrizedType = null;
+        while (parametrizedType == null) {
+            if ((genericSuperClass instanceof ParameterizedType)) {
+                parametrizedType = (ParameterizedType) genericSuperClass;
+            } else {
+                genericSuperClass = ((Class<?>) genericSuperClass).getGenericSuperclass();
             }
-            return fields;
-
-        } catch (IllegalAccessException | InstantiationException | IllegalArgumentException ex) {
-            log.error("Error when extracting serachFields {} [ DatabaseLayer ]", ex);
-            throw new DaoException("Error whgen extracting serachFields {}", ex);
         }
+        return (Class<T>) parametrizedType.getActualTypeArguments()[0];
+    }
+
+    private Set<String> getSearchFieldsFromCache() {
+        log.trace("Getting SearchFields for class: {} [ DatabaseLayer ] method:getSearchFieldsFromCache", entityClass.getSimpleName());
+        try {
+            CacheManager manager = CacheManager.getInstance();
+            Cache cache = manager.getCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
+            if (!cache.isDisabled()) {
+                return (HashSet<String>) cache.get(entityClass).getValue();
+            }
+        } catch (CacheException | ClassCastException | IllegalStateException ex) {
+            log.error("Error when getting search fields for class {} [ DatabaseLayer ] ErrorMessage:{}", entityClass.getSimpleName(), ex);
+        }
+        return new HashSet<>();
     }
 
     /**
@@ -465,9 +438,9 @@ public abstract class GenericDao<T extends GenericEntity> {
             } else {
                 return Optional.empty();
             }
-        } catch (Exception e) {
-            log.error(" [getAll] Error when getting all in Generic Dao [ DatabaseLayer ]");
-            throw new DaoException(" [getAll] Error when getting all in Generic Dao", e);
+        } catch (DaoException ex) {
+            log.error("Error when getting all in Generic Dao [ DatabaseLayer ] {} ", ex);
+            throw new DaoException("Error when getting all in Generic Dao", ex);
         }
     }
 
@@ -493,7 +466,7 @@ public abstract class GenericDao<T extends GenericEntity> {
             return Optional.empty();
         } catch (DaoException e) {
             log.error("Error when gettting entity {} in Generic DAO", query.getResultType());
-            throw new DaoException(" [get] Error when gettting entity " + query.getResultType(), e);
+            throw new DaoException("Error when gettting entity " + query.getResultType(), e);
         }
     }
 
@@ -526,7 +499,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @throws DaoException
      */
     protected Optional<List<T>> executeTypedQueryList(TypedQuery<T> query, Pagination pagination) throws DaoException {
-        log.trace("Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with TypedQuery and pagination )", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
+        log.trace("Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with pagination )", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
         try {
 
             if (Optional.ofNullable(pagination).isPresent()) {
@@ -562,16 +535,13 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @throws com.negod.generics.persistence.exception.NotFoundException
      */
     protected Optional<T> executeTypedQuery(TypedQuery<T> query) throws DaoException, NotFoundException {
-        log.trace(" [executeTypedQuery] Executing TypedQuery ( Single Entity ) query for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQuery", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
+        log.trace("Executing TypedQuery ( Single Entity ) query for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQuery", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
         try {
             T result = query.getSingleResult();
             return Optional.ofNullable(result);
-        } catch (NoResultException nrex) {
+        } catch (NoResultException | EntityNotFoundException nrex) {
             log.error("Entity not found! [ Get single entity ] for type {} [ DatabaseLayer ]", entityClass.getSimpleName());
             throw new NotFoundException(" [executeTypedQuery] Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), nrex);
-        } catch (EntityNotFoundException enfx) {
-            log.error("Entity not found! [ Get single entity ] for type {} [ DatabaseLayer ]", entityClass.getSimpleName());
-            throw new NotFoundException("Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), enfx);
         } catch (Exception e) {
             log.error("Error when executing TypedQuery [ Get single entity ] for type {} [ DatabaseLayer ]", entityClass.getSimpleName(), e);
             throw new DaoException("Error when executing TypedQuery [ Get single entity ] for type " + entityClass.getSimpleName(), e);

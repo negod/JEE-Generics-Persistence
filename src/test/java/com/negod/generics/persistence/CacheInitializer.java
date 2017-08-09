@@ -19,8 +19,10 @@ public class CacheInitializer extends EntityRegistry {
         return PersistenceUnitTest.getEntityManager();
     }
 
-    public void init() {
+    public CacheInitializer() {
         super.registerEnties();
+        super.registerSearchFields();
+        super.registerSearchFieldCaches();
     }
 
 }

@@ -15,10 +15,6 @@ import javax.persistence.EntityManager;
  */
 public class DomainEntityDao extends GenericDao<DomainEntity> {
 
-    public DomainEntityDao() throws DaoException {
-        super(DomainEntity.class);
-    }
-
     @Override
     public EntityManager getEntityManager() {
         return PersistenceUnitTest.getEntityManager();

@@ -8,6 +8,7 @@ package com.negod.generics;
 import com.negod.generics.mock.ServiceEntitiesMock;
 import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.persistence.CacheInitializer;
+import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.ServiceEntityDao;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.search.GenericFilter;
@@ -16,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import static org.junit.Assert.assertEquals;
@@ -38,7 +40,11 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     String[] serviceEntitySearchFields = new String[]{"detail.name", "users.name", "domain.name", "name"};
 
     public TestGenericDaoSearch() throws DaoException {
-        CACHE.init();
+    }
+
+    @Override
+    public EntityManager getEntityManager() {
+        return PersistenceUnitTest.getEntityManager();
     }
 
     @Test

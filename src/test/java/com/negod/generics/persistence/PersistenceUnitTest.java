@@ -16,7 +16,7 @@ import javax.persistence.PersistenceContext;
  */
 public class PersistenceUnitTest {
 
-    @PersistenceContext(name = "TestPu")
+    @PersistenceContext
     private static EntityManager em;
 
     protected static EntityManagerFactory emf;

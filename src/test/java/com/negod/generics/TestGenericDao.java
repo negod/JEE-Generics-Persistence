@@ -11,6 +11,7 @@ import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.mock.service.UserEntity;
 import com.negod.generics.persistence.CacheInitializer;
 import com.negod.generics.persistence.DomainEntityDao;
+import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.ServiceEntityDao;
 import com.negod.generics.persistence.UserEntityDao;
 import com.negod.generics.persistence.exception.DaoException;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -36,15 +38,20 @@ public class TestGenericDao extends ServiceEntityDao {
     CacheInitializer CACHE = new CacheInitializer();
 
     public TestGenericDao() throws DaoException {
-        CACHE.init();
-       
+    }
+
+    @Override
+    public EntityManager getEntityManager() {
+        return PersistenceUnitTest.getEntityManager();
     }
 
     @Test
     public void assertFields() throws DaoException {
         log.debug("Asserting fields");
-        assert getEntityClass().equals(ServiceEntity.class);
-        assert getClassName().equals(ServiceEntity.class.getSimpleName());
+        assert getEntityClass().equals(ServiceEntity.class
+        );
+        assert getClassName().equals(ServiceEntity.class
+                .getSimpleName());
         assert getSearchFields().equals(new HashSet<>(Arrays.asList(new String[]{"detail.name", "users.name", "domain.name", "name"})));
     }
 
