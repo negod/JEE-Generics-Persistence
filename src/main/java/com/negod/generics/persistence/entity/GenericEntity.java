@@ -29,7 +29,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.hibernate.search.annotations.DocumentId;
 
 /**
  *
@@ -43,7 +42,7 @@ import org.hibernate.search.annotations.DocumentId;
 @Setter
 @EqualsAndHashCode
 @Cacheable(value = true)
-public class GenericEntity implements Serializable {
+public class GenericEntity implements Serializable{
 
     @Id
     @NotNull(message = "External id cannot be null and should be set to UUID")

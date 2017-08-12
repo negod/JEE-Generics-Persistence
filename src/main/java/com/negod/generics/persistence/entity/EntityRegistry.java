@@ -20,6 +20,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SetAttribute;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.CacheManager;
@@ -30,6 +31,7 @@ import net.sf.ehcache.Element;
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
 @Slf4j
+@Getter
 public abstract class EntityRegistry {
 
     abstract public EntityManager getEntityManager();

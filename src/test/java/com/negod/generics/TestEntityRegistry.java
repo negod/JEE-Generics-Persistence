@@ -35,6 +35,8 @@ public class TestEntityRegistry extends EntityRegistry {
 
     public TestEntityRegistry() {
         super.registerEnties();
+        super.registerSearchFields();
+        super.registerSearchFieldCaches();
     }
 
     @Test
