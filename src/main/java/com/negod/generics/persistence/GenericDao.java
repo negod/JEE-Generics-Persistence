@@ -39,6 +39,7 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.dozer.MappingException;
 import org.hibernate.jpa.criteria.OrderImpl;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.Search;
@@ -64,8 +65,6 @@ public abstract class GenericDao<T extends GenericEntity> {
     /**
      * Constructor
      *
-     * @param entityClass The entityclass the DAO will handle
-     * @throws DaoException
      */
     public GenericDao() {
         this.entityClass = extractEntityClass();
@@ -126,7 +125,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param entity The entity to persist
      * @return The persisted entity
-     * @throws DaoException
+     * @throws DaoException 
      */
     public Optional<T> persist(T entity) throws DaoException {
         log.debug("Persisting entity of type {} with values {} [ DatabaseLayer ] method:persist", entityClass.getSimpleName(), entity.toString());
@@ -263,7 +262,7 @@ public abstract class GenericDao<T extends GenericEntity> {
                 return Optional.empty();
             }
             return Optional.ofNullable(getEntityManager().merge(entityToUpdate.get()));
-        } catch (Exception e) {
+        } catch (DaoException | MappingException e) {
             log.error("Error when updating entity in Generic Dao [ DatabaseLayer ] ");
             throw new DaoException("Error when updating entity ", e);
         }
@@ -274,6 +273,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param externalId
      * @return true or false depenent on the success of the deletion
+     * @throws com.negod.generics.persistence.exception.NotFoundException
      */
     public Boolean delete(String externalId) throws NotFoundException {
         log.debug("Deleting entity of type {} with id {} [ DatabaseLayer ] method:delete ( with only id )", entityClass.getSimpleName(), externalId);
@@ -317,6 +317,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param id The external id (GUID) of the entity
      * @return The entity that matches the id
      * @throws DaoException
+     * @throws com.negod.generics.persistence.exception.NotFoundException
      */
     public Optional<T> getById(String id) throws DaoException, NotFoundException {
         log.debug("Getting entity of type {} with id {} [ DatabaseLayer ] method:getById ( with id only )", entityClass.getSimpleName(), id);
@@ -456,6 +457,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param query The query to execute
      * @return The queried entity
      * @throws DaoException
+     * @throws com.negod.generics.persistence.exception.NotFoundException
      */
     protected Optional<T> get(CriteriaQuery<T> query) throws DaoException, NotFoundException {
         log.trace("Getting entity of type {} [ DatabaseLayer ] method:get", entityClass.getSimpleName());
