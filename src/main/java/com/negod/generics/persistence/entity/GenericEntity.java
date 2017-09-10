@@ -24,7 +24,7 @@ import javax.validation.constraints.Pattern;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,14 +35,14 @@ import lombok.ToString;
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
 @MappedSuperclass
-@XmlRootElement
+@XmlTransient
 @XmlAccessorType(XmlAccessType.NONE)
 @ToString
 @Getter
 @Setter
 @EqualsAndHashCode
 @Cacheable(value = true)
-public class GenericEntity implements Serializable{
+public abstract class GenericEntity implements Serializable {
 
     @Id
     @NotNull(message = "External id cannot be null and should be set to UUID")

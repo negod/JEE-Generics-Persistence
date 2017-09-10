@@ -3,6 +3,7 @@ package com.negod.generics.persistence;
 import com.negod.generics.persistence.entity.DefaultCacheNames;
 import com.negod.generics.persistence.entity.GenericEntity;
 import com.negod.generics.persistence.entity.GenericEntity_;
+import com.negod.generics.persistence.exception.ConstraintException;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.exception.NotFoundException;
 import com.negod.generics.persistence.mapper.BaseMapper;
@@ -40,6 +41,7 @@ import net.sf.ehcache.Element;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.dozer.MappingException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.jpa.criteria.OrderImpl;
 import org.hibernate.search.jpa.FullTextEntityManager;
 import org.hibernate.search.jpa.Search;
@@ -125,13 +127,16 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param entity The entity to persist
      * @return The persisted entity
-     * @throws DaoException 
+     * @throws DaoException
      */
-    public Optional<T> persist(T entity) throws DaoException {
+    public Optional<T> persist(T entity) throws DaoException, ConstraintException {
         log.debug("Persisting entity of type {} with values {} [ DatabaseLayer ] method:persist", entityClass.getSimpleName(), entity.toString());
         try {
             getEntityManager().persist(entity);
             return Optional.ofNullable(entity);
+        } catch (ConstraintViolationException e) {
+            log.error("Error when persisting entity in Generic Dao: Constraing violation on field{}", e.getConstraintName());
+            throw new ConstraintException(e.getMessage(), e);
         } catch (Exception e) {
             log.error("Error when persisting entity in Generic Dao");
             throw new DaoException("Error when persisting entity ", e);
@@ -373,7 +378,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @return All persisted entities
      * @throws DaoException
      */
-    public Optional<List<T>> search(GenericFilter filter) throws DaoException {
+    public Optional<Set<T>> search(GenericFilter filter) throws DaoException {
         log.debug("Getting all values of type {} and filter {} [ DatabaseLayer ] method:search ", entityClass.getSimpleName(), filter.toString());
         try {
 
@@ -384,7 +389,7 @@ public abstract class GenericDao<T extends GenericEntity> {
             Optional<String> searchWord = Optional.ofNullable(filter.getGlobalSearchWord());
             Optional<Pagination> pagination = Optional.ofNullable(filter.getPagination());
 
-            if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent() && pagination.isPresent()) {
+            if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent()) {
                 log.trace("Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:search", keys, searchWord.get().toLowerCase());
                 org.apache.lucene.search.Query query = qb
                         .keyword()
@@ -395,12 +400,17 @@ public abstract class GenericDao<T extends GenericEntity> {
 
                 Query persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
 
-                persistenceQuery.setMaxResults(filter.getPagination().getListSize());
-                persistenceQuery.setFirstResult(filter.getPagination().getListSize() * filter.getPagination().getPage());
+                if (pagination.isPresent()) {
+                    persistenceQuery.setMaxResults(filter.getPagination().getListSize());
+                    persistenceQuery.setFirstResult(filter.getPagination().getListSize() * filter.getPagination().getPage());
+                }else{
+                    log.info("Pagination not present in query returning all data");
+                }
 
-                return Optional.ofNullable(persistenceQuery.getResultList());
+                Set<T> resultList = new HashSet<T>(persistenceQuery.getResultList());
+                return Optional.ofNullable(resultList);
             } else {
-                log.error("Either pagination, search fields or search word or all is not present, aborting search [ DatabaseLayer ] method:search, "
+                log.error("Either search fields or search word or all is not present, aborting search [ DatabaseLayer ] method:search, "
                         + "Present? [Pagination:{} SearchWord:{} SearchFields:{} ]", pagination.isPresent(), searchWord.isPresent(), ArrayUtils.isEmpty(keys));
                 return Optional.empty();
             }

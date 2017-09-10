@@ -14,6 +14,7 @@ import com.negod.generics.persistence.DomainEntityDao;
 import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.ServiceEntityDao;
 import com.negod.generics.persistence.UserEntityDao;
+import com.negod.generics.persistence.exception.ConstraintException;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.update.ObjectUpdate;
 import com.negod.generics.persistence.update.UpdateType;
@@ -56,7 +57,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testPersist() throws DaoException {
+    public void testPersist() throws DaoException, ConstraintException {
         log.debug("Testing persist");
 
         String NAME = "PersistName";
@@ -73,7 +74,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testUpdate() throws DaoException {
+    public void testUpdate() throws DaoException, ConstraintException {
         log.debug("Testing update");
 
         String NAME = "PersistName2";
@@ -111,7 +112,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testDeleteWithEntity() throws DaoException {
+    public void testDeleteWithEntity() throws DaoException, ConstraintException {
         log.debug("Testing delete with entity");
 
         String ID = "";
@@ -140,7 +141,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testDeleteWithID() throws DaoException {
+    public void testDeleteWithID() throws DaoException, ConstraintException {
         log.debug("Testing delete with entity");
 
         String ID = "";
@@ -169,7 +170,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testManyToOneUpdateWithObject() throws DaoException {
+    public void testManyToOneUpdateWithObject() throws DaoException, ConstraintException {
 
         log.debug("Testing update with OneToOne Object");
 
@@ -213,7 +214,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testManyToOneUpdateWithNewObject() throws DaoException {
+    public void testManyToOneUpdateWithNewObject() throws DaoException, ConstraintException {
 
         log.debug("Testing update with OneToOne Object");
 
@@ -290,7 +291,7 @@ public class TestGenericDao extends ServiceEntityDao {
 
     //TODO
     @Test
-    public void testManyToOneDelete() throws DaoException {
+    public void testManyToOneDelete() throws DaoException, ConstraintException {
 
         log.debug("Testing deletion of OneToOne Object");
 
@@ -351,7 +352,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testGetById() throws DaoException {
+    public void testGetById() throws DaoException, ConstraintException {
 
         log.debug("Testing getById");
 
@@ -376,7 +377,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testManyToManyUpdateWithObject() throws DaoException {
+    public void testManyToManyUpdateWithObject() throws DaoException, ConstraintException {
 
         log.debug("Testing update with OneToOne Object");
 
@@ -454,7 +455,7 @@ public class TestGenericDao extends ServiceEntityDao {
     }
 
     @Test
-    public void testManyToManyDeleteWithObject() throws DaoException {
+    public void testManyToManyDeleteWithObject() throws DaoException, ConstraintException {
 
         log.debug("Testing update with OneToOne Object");
 

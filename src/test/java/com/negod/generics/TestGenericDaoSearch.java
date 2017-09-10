@@ -10,6 +10,7 @@ import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.persistence.CacheInitializer;
 import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.ServiceEntityDao;
+import com.negod.generics.persistence.exception.ConstraintException;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.search.GenericFilter;
 import java.util.Arrays;
@@ -78,7 +79,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         getEntityManager().getTransaction().commit();
     }
 
-    public void addNewValuesToDb(String[] names) throws DaoException {
+    public void addNewValuesToDb(String[] names) throws DaoException, ConstraintException {
         for (String name : names) {
             ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
             entity.setName(name);
@@ -89,7 +90,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     }
 
     @Test
-    public void testSearchServiceEntityWildcard() throws DaoException {
+    public void testSearchServiceEntityWildcard() throws DaoException, ConstraintException {
         log.debug("Test Search Service Entity.");
 
         addNewValuesToDb(userEntityNames);
@@ -108,9 +109,9 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         searchFields.add(SEARCHFIELD);
 
         GenericFilter filter = ServiceEntitiesMock.getGenericFilter(searchFields, SEARCHWORD, LIST_SIZE, PAGE);
-        Optional<List<ServiceEntity>> search = search(filter);
+        Optional<Set<ServiceEntity>> search = search(filter);
         assert search.isPresent();
-        List<ServiceEntity> searchRerult = search.get();
+        Set<ServiceEntity> searchRerult = search.get();
         assertEquals("Size is not 3", 3, searchRerult.size());
 
         //Try with Capital letter 
