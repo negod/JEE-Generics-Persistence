@@ -5,11 +5,14 @@
  */
 package com.negod.generics;
 
+import static com.negod.generics.mock.EntityMock.GUID;
 import com.negod.generics.mock.ServiceEntitiesMock;
 import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.persistence.CacheInitializer;
+import com.negod.generics.persistence.DomainEntityDao;
 import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.ServiceEntityDao;
+import com.negod.generics.persistence.UserEntityDao;
 import com.negod.generics.persistence.exception.ConstraintException;
 import com.negod.generics.persistence.exception.DaoException;
 import com.negod.generics.persistence.search.GenericFilter;
@@ -23,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -32,7 +36,9 @@ import org.junit.Test;
 @Slf4j
 public class TestGenericDaoSearch extends ServiceEntityDao {
 
-    CacheInitializer CACHE = new CacheInitializer();
+    DomainEntityDao DOMAIN_DAO;
+    UserEntityDao USER_DAO;
+    static CacheInitializer CACHE;
 
     String[] serviceEntityNames = new String[]{"NAME1", "name2", "n2ame", "Company1", "AbCd", "backede ab"};
     String[] userEntityNames = new String[]{"NAME1", "name2", "n2ame", "Company1", "AbCd", "backede ab"};
@@ -41,6 +47,18 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     String[] serviceEntitySearchFields = new String[]{"detail.name", "users.name", "domain.name", "name"};
 
     public TestGenericDaoSearch() throws DaoException {
+    }
+
+    @BeforeClass
+    public static void initClass() {
+        CACHE = new CacheInitializer();
+    }
+
+    @Before
+    public void init() {
+        USER_DAO = new UserEntityDao();
+        DOMAIN_DAO = new DomainEntityDao();
+        clearDb();
     }
 
     @Override
@@ -54,11 +72,6 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         assert getEntityClass().equals(ServiceEntity.class);
         assert getClassName().equals(ServiceEntity.class.getSimpleName());
         assert getSearchFields().equals(new HashSet<>(Arrays.asList(serviceEntitySearchFields)));
-    }
-
-    @Before
-    public void init() throws DaoException {
-        clearDb();
     }
 
     private void clearDb() {
@@ -127,6 +140,95 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         assert search.isPresent();
         searchRerult = search.get();
         assertEquals("List is not empty", true, searchRerult.isEmpty());
+
+    }
+
+    @Test
+    public void testSearchServiceEntityNotWildcard() throws DaoException, DaoException, ConstraintException {
+
+        clearDb();
+
+        log.debug("Test Search Service Entity.");
+
+        addNewValuesToDb(userEntityNames);
+
+        Optional<List<ServiceEntity>> all = getAll();
+
+        assert all.isPresent();
+
+        assert all.get().size() == serviceEntityNames.length;
+
+        //Try wildcard search with one letter
+        String SEARCHFIELD = "name";
+        String SEARCHWORD = "n*";
+        Integer LIST_SIZE = 100;
+        Integer PAGE = 0;
+
+        Set<String> searchFields = new HashSet<>();
+
+        searchFields.add(SEARCHFIELD);
+
+        GenericFilter filter = ServiceEntitiesMock.getGenericFilter(searchFields, SEARCHWORD, LIST_SIZE, PAGE);
+        Optional<Set<ServiceEntity>> search = search(filter);
+
+        assert search.isPresent();
+        Set<ServiceEntity> searchRerult = search.get();
+
+        assertEquals("Size is not 3", 3, searchRerult.size());
+
+        //Try with Capital letter 
+        filter.setGlobalSearchWord(StringUtils.capitalize(SEARCHWORD));
+        search = search(filter);
+
+        assert search.isPresent();
+        searchRerult = search.get();
+
+        assertEquals("Size is not 3", 3, searchRerult.size());
+
+        //Exclude wildcard
+        filter.setGlobalSearchWord("name");
+        search = search(filter);
+
+        assert search.isPresent();
+        searchRerult = search.get();
+
+        assertEquals("List is not empty", true, searchRerult.isEmpty());
+
+    }
+
+    @Test
+    public void testSearchWithSpecialChars() throws DaoException, ConstraintException {
+
+        clearDb();
+        addNewValuesToDb(serviceEntityNames);
+
+        log.debug("Test Search Service Entity.");
+
+        ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
+        entity.setName("GUID-TEST");
+        getEntityManager().getTransaction().begin();
+        Optional<ServiceEntity> persistedEntity = persist(entity);
+        getEntityManager().getTransaction().commit();
+
+        String UUID = persistedEntity.get().getId();
+
+        //Try search with whole uuid
+        String SEARCHFIELD = "id";
+        String SEARCHWORD = UUID;
+        Integer LIST_SIZE = 100;
+        Integer PAGE = 0;
+
+        Set<String> searchFields = new HashSet<>();
+
+        searchFields.add(SEARCHFIELD);
+
+        GenericFilter filter = ServiceEntitiesMock.getGenericFilter(searchFields, SEARCHWORD, LIST_SIZE, PAGE);
+        Optional<Set<ServiceEntity>> search = search(filter);
+
+        assert search.isPresent();
+        Set<ServiceEntity> searchRerult = search.get();
+
+        assertEquals("Size is not 1", 1, searchRerult.size());
 
     }
 

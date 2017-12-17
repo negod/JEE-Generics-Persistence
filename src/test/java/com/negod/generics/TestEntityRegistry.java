@@ -13,7 +13,6 @@ import com.negod.generics.persistence.PersistenceUnitTest;
 import com.negod.generics.persistence.entity.DefaultCacheNames;
 import com.negod.generics.persistence.entity.EntityRegistry;
 import java.util.HashMap;
-import java.util.Map;
 import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.ehcache.Cache;
@@ -37,7 +36,7 @@ public class TestEntityRegistry extends EntityRegistry {
         super.registerEnties();
         super.registerSearchFields();
         super.registerSearchFieldCaches();
-    }
+    } 
 
     @Test
     public void test() {

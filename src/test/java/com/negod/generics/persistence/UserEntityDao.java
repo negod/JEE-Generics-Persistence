@@ -5,9 +5,7 @@
  */
 package com.negod.generics.persistence;
 
-import com.negod.generics.mock.service.DomainEntity;
 import com.negod.generics.mock.service.UserEntity;
-import com.negod.generics.persistence.exception.DaoException;
 import javax.persistence.EntityManager;
 
 /**

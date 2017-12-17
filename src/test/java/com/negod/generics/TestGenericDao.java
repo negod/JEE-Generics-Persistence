@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -34,9 +34,9 @@ import org.junit.Test;
 @Slf4j
 public class TestGenericDao extends ServiceEntityDao {
 
+    static CacheInitializer CACHE;
     DomainEntityDao DOMAIN_DAO = new DomainEntityDao();
     UserEntityDao USER_DAO = new UserEntityDao();
-    CacheInitializer CACHE = new CacheInitializer();
 
     public TestGenericDao() throws DaoException {
     }
@@ -45,14 +45,17 @@ public class TestGenericDao extends ServiceEntityDao {
     public EntityManager getEntityManager() {
         return PersistenceUnitTest.getEntityManager();
     }
+    
+    @BeforeClass
+    public static void init(){
+        CACHE = new CacheInitializer();
+    }
 
     @Test
     public void assertFields() throws DaoException {
         log.debug("Asserting fields");
-        assert getEntityClass().equals(ServiceEntity.class
-        );
-        assert getClassName().equals(ServiceEntity.class
-                .getSimpleName());
+        assert getEntityClass().equals(ServiceEntity.class);
+        assert getClassName().equals(ServiceEntity.class.getSimpleName());
         assert getSearchFields().equals(new HashSet<>(Arrays.asList(new String[]{"detail.name", "users.name", "domain.name", "name"})));
     }
 

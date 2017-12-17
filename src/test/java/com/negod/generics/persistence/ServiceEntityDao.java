@@ -6,7 +6,6 @@
 package com.negod.generics.persistence;
 
 import com.negod.generics.mock.service.ServiceEntity;
-import com.negod.generics.persistence.exception.DaoException;
 import javax.persistence.EntityManager;
 
 /**
