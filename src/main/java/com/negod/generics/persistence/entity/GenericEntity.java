@@ -65,7 +65,9 @@ public abstract class GenericEntity implements Serializable {
     @PrePersist
     protected void onCreate() {
         this.updatedDate = new Date();
-        this.id = UUID.randomUUID().toString();
+        if (this.id == null) {
+            this.id = UUID.randomUUID().toString();
+        }
     }
 
 }

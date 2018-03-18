@@ -19,10 +19,15 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     
         <!-- JPA DEPENDENCIES-->
-        <hibernate.core.version>5.0.7.Final</hibernate.core.version>
-        <hibernate.validator.version>5.2.4.Final</hibernate.validator.version>
-        <hibernate.search.version>5.5.3.Final</hibernate.search.version>
+        <hibernate.core.version>5.1.10.Final</hibernate.core.version>
+        <hibernate.validator.version>5.3.5.Final</hibernate.validator.version>
+        <hibernate.search.version>5.5.8.Final</hibernate.search.version>
         <hibernate.search.infispan.version>5.5.2.Final</hibernate.search.infispan.version>
+        
+        <hibernate.entitymanager.version>5.1.10.Final</hibernate.entitymanager.version>
+        <hibernate.ehcache.version>5.0.7.Final</hibernate.ehcache.version>
+        <ehcache.core.version>2.6.11</ehcache.core.version>
+        
     </properties>
     
     <dependencies>
@@ -53,11 +58,11 @@
             <artifactId>hibernate-search-orm</artifactId>
             <version>${hibernate.search.version}</version>
             <scope>provided</scope>
-        </dependency>        
+        </dependency>     
         <dependency>
             <groupId>net.sf.ehcache</groupId>
             <artifactId>ehcache-core</artifactId>
-            <version>2.4.7</version>
+            <version>${ehcache.core.version}</version>
         </dependency>
         
         <!-- MAPPING -->

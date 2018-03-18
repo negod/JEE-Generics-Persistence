@@ -26,6 +26,9 @@ public class PersistenceUnitTest {
             emf = Persistence.createEntityManagerFactory("TestPu");
             em = emf.createEntityManager();
         }
+        if (!em.isOpen()) {
+            em = emf.createEntityManager();
+        }
         return em;
     }
 

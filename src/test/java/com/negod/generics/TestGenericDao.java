@@ -45,9 +45,9 @@ public class TestGenericDao extends ServiceEntityDao {
     public EntityManager getEntityManager() {
         return PersistenceUnitTest.getEntityManager();
     }
-    
+
     @BeforeClass
-    public static void init(){
+    public static void init() {
         CACHE = new CacheInitializer();
     }
 
@@ -68,9 +68,9 @@ public class TestGenericDao extends ServiceEntityDao {
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName(NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persist = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         assert persist.isPresent();
         assert persist.get().getName().equals(NAME);
@@ -87,25 +87,25 @@ public class TestGenericDao extends ServiceEntityDao {
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName(NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persist = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         ID = persist.get().getId();
 
         assert persist.isPresent();
         assert persist.get().getName().equals(NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> byId = getById(ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         assert byId.isPresent();
 
         byId.get().setName(UPDATED_NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> update = update(byId.get());
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         Optional<ServiceEntity> byIdUpdated = getById(ID);
 
@@ -121,26 +121,21 @@ public class TestGenericDao extends ServiceEntityDao {
         String ID = "";
 
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persist = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         ID = persist.get().getId();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> byId = getById(ID);
-        getEntityManager().getTransaction().commit();
         assert byId.isPresent();
 
-        getEntityManager().getTransaction().begin();
-        Boolean delete = delete(entity);
-        getEntityManager().getTransaction().commit();
+        Boolean delete = delete(byId.get());
         assert delete;
 
-        getEntityManager().getTransaction().begin();
         Optional<ServiceEntity> deletedById = getById(ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert !deletedById.isPresent();
-
     }
 
     @Test
@@ -150,24 +145,24 @@ public class TestGenericDao extends ServiceEntityDao {
         String ID = "";
 
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persist = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         ID = persist.get().getId();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> byId = getById(ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert byId.isPresent();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Boolean delete = delete(ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert delete;
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> deletedById = getById(ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert !deletedById.isPresent();
 
     }
@@ -182,18 +177,18 @@ public class TestGenericDao extends ServiceEntityDao {
 
         //Create a ServiceEntity
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedService = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         SERVICE_ID = persistedService.get().getId();
         assert persistedService.isPresent();
         assert persistedService.get().getDomain() == null;
 
         //Create a DomainEntity
         DomainEntity domain = ServiceEntitiesMock.getDomainEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<DomainEntity> persistedDomain = DOMAIN_DAO.persist(domain);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         DOMAIN_ID = persistedDomain.get().getId();
         assert persistedDomain.isPresent();
 
@@ -202,14 +197,14 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdate.setObject("domain");
         objectUpdate.setObjectId(DOMAIN_ID);
         objectUpdate.setType(UpdateType.ADD);
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceEntity = update(SERVICE_ID, objectUpdate);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntity.isPresent();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getDomain() != null;
         assert updatedServiceById.get().getDomain().getId().equals(DOMAIN_ID);
@@ -227,18 +222,18 @@ public class TestGenericDao extends ServiceEntityDao {
 
         //Create a ServiceEntity
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedService = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         SERVICE_ID = persistedService.get().getId();
         assert persistedService.isPresent();
         assert persistedService.get().getDomain() == null;
 
         //Create a DomainEntity
         DomainEntity domain = ServiceEntitiesMock.getDomainEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<DomainEntity> persistedDomain = DOMAIN_DAO.persist(domain);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         DOMAIN_ID = persistedDomain.get().getId();
         assert persistedDomain.isPresent();
 
@@ -247,30 +242,30 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdate.setObject("domain");
         objectUpdate.setObjectId(DOMAIN_ID);
         objectUpdate.setType(UpdateType.ADD);
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceEntity = update(SERVICE_ID, objectUpdate);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntity.isPresent();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getDomain() != null;
         assert updatedServiceById.get().getDomain().getId().equals(DOMAIN_ID);
 
         //Create a new DomainEntity
         DomainEntity newDomain = ServiceEntitiesMock.getDomainEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<DomainEntity> persistedNewDomain = DOMAIN_DAO.persist(newDomain);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         NEW_DOMAIN_ID = persistedNewDomain.get().getId();
         assert persistedNewDomain.isPresent();
 
         //Get the persisted ServiceEntity
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> serviceForUpdate = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert serviceForUpdate.isPresent();
 
         //Set the new DomainEntity to ServiceEntity  
@@ -278,16 +273,16 @@ public class TestGenericDao extends ServiceEntityDao {
         newObjectUpdate.setObject("domain");
         newObjectUpdate.setObjectId(NEW_DOMAIN_ID);
         newObjectUpdate.setType(UpdateType.UPDATE);
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceEntityWithNewDomain = update(SERVICE_ID, newObjectUpdate);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntityWithNewDomain.isPresent();
         assert persistedNewDomain.isPresent();
 
         //Get the persisted ServiceEntity
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         serviceForUpdate = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert serviceForUpdate.isPresent();
 
     }
@@ -303,18 +298,18 @@ public class TestGenericDao extends ServiceEntityDao {
 
         //Create a ServiceEntity
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedService = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         SERVICE_ID = persistedService.get().getId();
         assert persistedService.isPresent();
         assert persistedService.get().getDomain() == null;
 
         //Create a DomainEntity
         DomainEntity domain = ServiceEntitiesMock.getDomainEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<DomainEntity> persistedDomain = DOMAIN_DAO.persist(domain);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         DOMAIN_ID = persistedDomain.get().getId();
         assert persistedDomain.isPresent();
 
@@ -323,14 +318,14 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdate.setObject("domain");
         objectUpdate.setObjectId(DOMAIN_ID);
         objectUpdate.setType(UpdateType.ADD);
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceEntity = update(SERVICE_ID, objectUpdate);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntity.isPresent();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getDomain() != null;
         assert updatedServiceById.get().getDomain().getId().equals(DOMAIN_ID);
@@ -340,15 +335,15 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdate.setObject("domain");
         objectUpdate.setObjectId(DOMAIN_ID);
         objectUpdate.setType(UpdateType.DELETE);
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> seriveWithDeletedDomain = update(SERVICE_ID, objectUpdate);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert seriveWithDeletedDomain.isPresent();
 
         //Get the persisted ServiceEntity and assert domain removed
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> serviceWithDomainDeleted = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert serviceWithDomainDeleted.isPresent();
         assert serviceWithDomainDeleted.get().getDomain() == null;
 
@@ -364,16 +359,16 @@ public class TestGenericDao extends ServiceEntityDao {
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName(NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persist = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         assert persist.isPresent();
         assert persist.get().getName().equals(NAME);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> byId = getById(persist.get().getId());
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         assert persist.get().getId().equals(byId.get().getId());
         assert persist.get().getName().equals(byId.get().getName());
@@ -391,26 +386,26 @@ public class TestGenericDao extends ServiceEntityDao {
 
         //Create a Service
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedService = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         SERVICE_ID = persistedService.get().getId();
         assert persistedService.isPresent();
         assert persistedService.get().getDomain() == null;
 
         //Create User 1
         UserEntity user1 = ServiceEntitiesMock.getUserEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<UserEntity> persistedUser1 = USER_DAO.persist(user1);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         USER_ID_1 = persistedUser1.get().getId();
         assert persistedUser1.isPresent();
 
         //Create User 2
         UserEntity user2 = ServiceEntitiesMock.getUserEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<UserEntity> persistedUser2 = USER_DAO.persist(user2);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         USER_ID_2 = persistedUser2.get().getId();
         assert persistedUser2.isPresent();
 
@@ -431,15 +426,15 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdateSet.add(objectUpdate2);
 
         //Update ServiceEntity with UserEntities
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Boolean updatedServiceEntity = update(SERVICE_ID, objectUpdateSet);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntity;
 
         //Assert Users added
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getUsers() != null;
 
@@ -469,26 +464,26 @@ public class TestGenericDao extends ServiceEntityDao {
 
         //Create a Service
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedService = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         SERVICE_ID = persistedService.get().getId();
         assert persistedService.isPresent();
         assert persistedService.get().getDomain() == null;
 
         //Create User 1
         UserEntity user1 = ServiceEntitiesMock.getUserEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<UserEntity> persistedUser1 = USER_DAO.persist(user1);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         USER_ID_1 = persistedUser1.get().getId();
         assert persistedUser1.isPresent();
 
         //Create User 2
         UserEntity user2 = ServiceEntitiesMock.getUserEntity();
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<UserEntity> persistedUser2 = USER_DAO.persist(user2);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         USER_ID_2 = persistedUser2.get().getId();
         assert persistedUser2.isPresent();
 
@@ -509,15 +504,15 @@ public class TestGenericDao extends ServiceEntityDao {
         objectUpdateSet.add(objectUpdate2);
 
         //Update ServiceEntity with UserEntities
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Boolean updatedServiceEntity = update(SERVICE_ID, objectUpdateSet);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert updatedServiceEntity;
 
         //Assert Users added
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> updatedServiceById = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        //commitTransaction();
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getUsers() != null;
 
@@ -539,15 +534,15 @@ public class TestGenericDao extends ServiceEntityDao {
         deleteUser1.setObjectId(USER_ID_1);
         deleteUser1.setType(UpdateType.DELETE);
 
-        getEntityManager().getTransaction().begin();
+        //startTransaction();
         Optional<ServiceEntity> deletedUser1 = update(SERVICE_ID, deleteUser1);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert deletedUser1.isPresent();
 
         //Assert User1 deleted
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> serviceByIdUser1Removed = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert serviceByIdUser1Removed.isPresent();
         assert serviceByIdUser1Removed.get().getUsers() != null;
         assert serviceByIdUser1Removed.get().getUsers().size() == 1;
@@ -561,15 +556,15 @@ public class TestGenericDao extends ServiceEntityDao {
         deleteUser2.setObjectId(USER_ID_2);
         deleteUser2.setType(UpdateType.DELETE);
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> deletedUser2 = update(SERVICE_ID, deleteUser2);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert deletedUser2.isPresent();
 
         //Assert User1 and User2 deleted
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> serviceByIdUser2Removed = getById(SERVICE_ID);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
         assert serviceByIdUser2Removed.isPresent();
         assert serviceByIdUser2Removed.get().getUsers() != null;
 

@@ -75,30 +75,30 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     }
 
     private void clearDb() {
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         int disconnectDomains = getEntityManager().createQuery("UPDATE ServiceEntity set domain_id = null").executeUpdate();
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         int domain = getEntityManager().createQuery("DELETE from DomainEntity").executeUpdate();
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         int user = getEntityManager().createQuery("DELETE from UserEntity").executeUpdate();
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         int service = getEntityManager().createQuery("DELETE from ServiceEntity").executeUpdate();
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
     }
 
     public void addNewValuesToDb(String[] names) throws DaoException, ConstraintException {
         for (String name : names) {
             ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
             entity.setName(name);
-            getEntityManager().getTransaction().begin();
+            startTransaction();
             Optional<ServiceEntity> persistedEntity = persist(entity);
-            getEntityManager().getTransaction().commit();
+            commitTransaction();
         }
     }
 
@@ -206,9 +206,9 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
 
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName("GUID-TEST");
-        getEntityManager().getTransaction().begin();
+        startTransaction();
         Optional<ServiceEntity> persistedEntity = persist(entity);
-        getEntityManager().getTransaction().commit();
+        commitTransaction();
 
         String UUID = persistedEntity.get().getId();
 

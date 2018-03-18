@@ -10,6 +10,7 @@ import com.negod.generics.mock.service.ServiceEntity;
 import com.negod.generics.mock.service.UserEntity;
 import com.negod.generics.persistence.search.GenericFilter;
 import com.negod.generics.persistence.search.Pagination;
+import com.negod.generics.persistence.search.SearchMatch;
 import com.negod.generics.persistence.update.ObjectUpdate;
 import java.util.HashSet;
 import java.util.Set;
@@ -56,6 +57,7 @@ public class ServiceEntitiesMock {
         Pagination pagination = new Pagination();
         pagination.setListSize(listsize);
         pagination.setPage(page);
+        filter.setSearchMatch(SearchMatch.WILDCARD);
         filter.setPagination(pagination);
         return filter;
     }

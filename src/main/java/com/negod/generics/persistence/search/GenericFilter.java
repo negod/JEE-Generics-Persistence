@@ -5,8 +5,6 @@ package com.negod.generics.persistence.search;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
-
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Data;
@@ -22,5 +20,6 @@ public class GenericFilter {
     private String globalSearchWord;
     //private OrderBy order;
     private Pagination pagination;
+    private SearchMatch searchMatch;
 
 }

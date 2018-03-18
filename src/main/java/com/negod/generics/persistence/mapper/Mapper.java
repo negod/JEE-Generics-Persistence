@@ -45,7 +45,8 @@ public class Mapper {
                     List keys = cache.get().getKeys();
                     for (Object key : keys) {
                         Class<?> clazz = (Class) key;
-                        mapping(clazz, clazz, mapNull(false), mapEmptyString(false)).exclude("id").exclude("updatedDate");
+                        //mapping(clazz, clazz, mapNull(false), mapEmptyString(false)).exclude("id").exclude("updatedDate");
+                        mapping(clazz, clazz, mapNull(false), mapEmptyString(false)).exclude("updatedDate");
                     }
                 } else {
                     log.error("GenericMapper: Cache [ entity_registry ] not initialized!, Continuing....");
