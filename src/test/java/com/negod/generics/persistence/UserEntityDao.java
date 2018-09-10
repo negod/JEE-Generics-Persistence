@@ -19,4 +19,9 @@ public class UserEntityDao extends GenericDao<UserEntity> {
         return PersistenceUnitTest.getEntityManager();
     }
 
+    @Override
+    public EntityManager getEntityManager(String name) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
 }

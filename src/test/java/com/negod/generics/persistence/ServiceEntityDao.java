@@ -15,8 +15,13 @@ import javax.persistence.EntityManager;
 public class ServiceEntityDao extends GenericDao<ServiceEntity> {
 
     @Override
-    public EntityManager getEntityManager(){
+    public EntityManager getEntityManager() {
         return PersistenceUnitTest.getEntityManager();
+    }
+
+    @Override
+    public EntityManager getEntityManager(String name) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }
