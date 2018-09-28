@@ -2,7 +2,6 @@ package se.backede.generics.persistence;
 
 import se.backede.generics.persistence.entity.DefaultCacheNames;
 import se.backede.generics.persistence.entity.GenericEntity;
-import com.negod.generics.persistence.entity.GenericEntity_;
 import se.backede.generics.persistence.exception.DaoException;
 import se.backede.generics.persistence.mapper.EntityBaseMapper;
 import se.backede.generics.persistence.mapper.Mapper;
@@ -46,6 +45,7 @@ import org.hibernate.search.jpa.Search;
 import org.hibernate.search.query.dsl.PhraseContext;
 import org.hibernate.search.query.dsl.PhraseMatchingContext;
 import org.hibernate.search.query.dsl.QueryBuilder;
+import se.backede.generics.persistence.entity.GenericEntity_;
 
 /**
  *

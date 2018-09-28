@@ -6,10 +6,10 @@
 
     <persistence-unit name="TestPu" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-        <class>com.negod.generics.mock.service.ServiceEntity</class>
-        <class>com.negod.generics.mock.service.ServiceDetailEntity</class>
-        <class>com.negod.generics.mock.service.UserEntity</class>
-        <class>com.negod.generics.mock.service.DomainEntity</class>
+        <class>se.backede.generics.mock.service.ServiceEntity</class>
+        <class>se.backede.generics.mock.service.ServiceDetailEntity</class>
+        <class>se.backede.generics.mock.service.UserEntity</class>
+        <class>se.backede.generics.mock.service.DomainEntity</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
         <properties>

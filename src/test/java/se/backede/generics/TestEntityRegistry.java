@@ -36,7 +36,7 @@ public class TestEntityRegistry extends EntityRegistry {
         super.registerEnties();
         super.registerSearchFields();
         super.registerSearchFieldCaches();
-    } 
+    }
 
     @Test
     public void test() {
@@ -56,7 +56,7 @@ public class TestEntityRegistry extends EntityRegistry {
         Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
         Element get = cache.get(ServiceEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
 
         assert cachedData.size() == 4;
 
@@ -77,7 +77,7 @@ public class TestEntityRegistry extends EntityRegistry {
         Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
         Element get = cache.get(DomainEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.<String, Class>getObjectValue();
 
         assert cachedData.size() == 2;
 
@@ -94,7 +94,7 @@ public class TestEntityRegistry extends EntityRegistry {
         Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
         Element get = cache.get(UserEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
 
         assert cachedData.size() == 2;
 
@@ -111,7 +111,7 @@ public class TestEntityRegistry extends EntityRegistry {
         Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
         Element get = cache.get(ServiceDetailEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
 
         assert cachedData.size() == 2;
 
