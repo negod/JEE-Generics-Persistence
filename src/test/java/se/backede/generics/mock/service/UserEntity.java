@@ -15,6 +15,7 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.ManyToMany;
 import javax.persistence.Table;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
@@ -49,6 +50,7 @@ import org.hibernate.search.annotations.TokenizerDef;
         filters = {
             @TokenFilterDef(factory = LowerCaseFilterFactory.class)
         })
+@EqualsAndHashCode
 public class UserEntity extends GenericEntity {
 
     @Analyzer(definition = "user_customanalyzer")

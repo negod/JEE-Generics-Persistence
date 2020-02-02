@@ -7,13 +7,9 @@ package se.backede.generics;
 
 import se.backede.generics.persistence.TypeCheck;
 import se.backede.generics.persistence.exception.TypeCastException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;

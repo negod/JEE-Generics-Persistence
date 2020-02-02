@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="Create category_type Table" author="Joakim Backede">
+
+        <createTable tableName="category_type">
+            <column name="id" type="varchar(36)" >
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="updatedDate" type="timestamp" >
+                <constraints nullable="false" />
+            </column>
+            <column name="name" type="varchar(50)" >
+                <constraints nullable="false" unique="true"/>
+            </column>
+        </createTable>
+
+        <rollback>
+            <dropTable tableName="bill_category" cascadeConstraints="true" />
+        </rollback>
+
+    </changeSet>
+
+    <changeSet id="add category_types initdata" author="Joakim Backede">
+
+
+
+
+        <insert  tableName="category_type">
+            <column name="id" value="d5852002-1da1-45b9-86c0-9368bb51b3a0" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="INCOME" type="varchar(50)"/>
+        </insert>
+
+        <insert  tableName="category_type">
+            <column name="id" value="f042f6cf-c9a8-4130-8704-b675605145f5" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="EXPENSE" type="varchar(50)"/>
+        </insert>
+
+        <insert  tableName="category_type">
+            <column name="id" value="1c13c92d-2a77-4020-902e-2a80af380c80" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="BILL" type="varchar(50)"/>
+        </insert>
+
+        <insert  tableName="category_type">
+            <column name="id" value="3944c107-7a37-4bac-aad2-5aab57e428d8" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="TRANSFER" type="varchar(50)"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="add category_types initdata 2" author="Joakim Backede">
+
+
+        <insert  tableName="category_type">
+            <column name="id" value="d5852003-1da1-45b7-86c0-9378bb51b4a0" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="LOAN" type="varchar(50)"/>
+        </insert>
+
+        <insert  tableName="category_type">
+            <column name="id" value="a042f6cf-c9a8-4128-8704-q675603745f5" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="SAVING" type="varchar(50)"/>
+        </insert>
+
+    </changeSet>
+
+    <changeSet id="add category_types initdata 3" author="Joakim Backede">
+
+        <insert  tableName="category_type">
+            <column name="id" value="d5851996-1da1-45b7-86c0-9378bb51b4a0" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="CREDIT_CARD" type="varchar(50)"/>
+        </insert>
+
+        <insert  tableName="category_type">
+            <column name="id" value="a042f6ab-c9a8-4128-8704-q675603745f5" type="varchar(36)"/>
+            <column name="updatedDate" value="now()" type="timestamp"/>
+            <column name="name" value="POCKET_MONEY" type="varchar(50)"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="Create company Table" author="Joakim Backede">
+
+        <createTable tableName="company">
+            <column name="id" type="varchar(36)" >
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="updatedDate" type="timestamp" >
+                <constraints nullable="false" />
+            </column>
+            <column name="name" type="varchar(200)" >
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="category" type="varchar(36)" >
+                <constraints nullable="false" unique="false" />
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="category"
+                                 baseTableName="company"
+                                 constraintName="company_category_fk"
+                                 referencedColumnNames="id"
+                                 referencedTableName="category"
+                                 onDelete="NO ACTION"
+                                 onUpdate="RESTRICT"/>
+
+        <rollback>
+            <dropTable tableName="company" cascadeConstraints="true" />
+        </rollback>
+
+    </changeSet>
+
+    <changeSet id="addOriginalName" author="Joakim Backede">
+        <addColumn tableName="company">
+            <column name="originalName" type="varchar(255)" >
+                <constraints unique="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

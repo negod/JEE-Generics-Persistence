@@ -22,8 +22,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -41,6 +39,7 @@ import org.hibernate.Session;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.criteria.internal.OrderImpl;
 import org.hibernate.search.jpa.FullTextEntityManager;
+import org.hibernate.search.jpa.FullTextQuery;
 import org.hibernate.search.jpa.Search;
 import org.hibernate.search.query.dsl.PhraseContext;
 import org.hibernate.search.query.dsl.PhraseMatchingContext;
@@ -61,8 +60,7 @@ public abstract class GenericDao<T extends GenericEntity> {
     private final Set<String> searchFields = new HashSet<>();
     private final EntityBaseMapper mapper;
 
-    @PersistenceContext
-    EntityManager entityManager;
+    public abstract EntityManager getEntityManager();
 
     public abstract EntityManager getEntityManager(String name);
 
@@ -79,6 +77,8 @@ public abstract class GenericDao<T extends GenericEntity> {
         this.className = entityClass.getSimpleName();
         this.searchFields.addAll(getSearchFieldsFromCache());
         this.mapper = new EntityBaseMapper(entityClass, entityClass);
+
+        log.trace("Instantiating DONE for GenericDao. Entity class: {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
     }
 
     private Class<T> extractEntityClass() {
@@ -100,12 +100,16 @@ public abstract class GenericDao<T extends GenericEntity> {
         try {
             CacheManager manager = CacheManager.getInstance();
             Cache cache = manager.getCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
-            if (!cache.isDisabled()) {
-                if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
-                    return (HashSet<String>) cache.get(entityClass).getObjectValue();
-                } else {
-                    log.debug("Cache for entityclass {} not present in cache", entityClass.getCanonicalName());
+            if (cache != null) {
+                if (!cache.isDisabled()) {
+                    if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
+                        return (HashSet<String>) cache.get(entityClass).getObjectValue();
+                    } else {
+                        log.debug("Cache for entityclass {} not present in cache", entityClass.getCanonicalName());
+                    }
                 }
+            } else {
+                log.error("CACHE is null!");
             }
         } catch (CacheException | ClassCastException | IllegalStateException ex) {
             log.error("Error when getting search fields for class {} [ DatabaseLayer ] ErrorMessage:{}", entityClass.getSimpleName(), ex);
@@ -148,6 +152,27 @@ public abstract class GenericDao<T extends GenericEntity> {
             log.error("Error when persisting entity in Generic Dao");
         }
         return Optional.empty();
+    }
+
+    /**
+     * Persist the Entity to DB
+     *
+     * @param entity The entity to persist
+     * @return The persisted entity
+     * @throws DaoException
+     */
+    public Optional<Boolean> persist(Set<T> entity) {
+        log.debug("Persisting entity of type {} with values {} [ DatabaseLayer ] method:persist", entityClass.getSimpleName(), entity.toString());
+
+        return startTransaction().map((transaction) -> {
+
+            entity.forEach((t) -> {
+                getEntityManager().persist(t);
+            });
+
+            return commitTransaction().get();
+
+        });
     }
 
     /**
@@ -404,7 +429,7 @@ public abstract class GenericDao<T extends GenericEntity> {
                         throw new AssertionError();
                 }
 
-                Query persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
+                FullTextQuery persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
 
                 if (pagination.isPresent()) {
                     persistenceQuery.setMaxResults(filter.getPagination().getListSize());
@@ -437,24 +462,23 @@ public abstract class GenericDao<T extends GenericEntity> {
     public Optional<List<T>> getAll(Pagination pagination) {
         log.debug("Getting all values of type {} with pagination {} [ DatabaseLayer ] method:getAll ( with pagination )", entityClass.getSimpleName(), pagination);
         try {
-            Optional<CriteriaQuery<T>> data = this.getCriteriaQuery();
-            if (data.isPresent()) {
 
-                CriteriaQuery<T> cq = data.get();
-                Root<T> rootEntity = cq.from(entityClass);
-                Order order = new OrderImpl(rootEntity.get(GenericEntity_.updatedDate), true);
-                cq.orderBy(order);
-                CriteriaQuery<T> allQuery = cq.select(rootEntity);
+            CriteriaBuilder cb = getEntityManager().getCriteriaBuilder();
+            CriteriaQuery<T> cq = cb.createQuery(entityClass);
+            Root<T> rootEntity = cq.from(entityClass);
 
-                if (Optional.ofNullable(pagination.getListSize()).isPresent()
-                        && Optional.ofNullable(pagination.getPage()).isPresent()) {
-                    return executeTypedQueryList(getEntityManager().createQuery(allQuery), pagination);
-                } else {
-                    return executeTypedQueryList(getEntityManager().createQuery(allQuery));
-                }
+            cq.orderBy(cb.asc(rootEntity.get(GenericEntity_.updatedDate)));
+
+            CriteriaQuery<T> allQuery = cq.select(rootEntity);
+
+            if (Optional.ofNullable(pagination.getListSize()).isPresent()
+                    && Optional.ofNullable(pagination.getPage()).isPresent()) {
+                return executeTypedQueryList(getEntityManager().createQuery(allQuery), pagination);
             } else {
-                return Optional.empty();
+                TypedQuery<T> query = getEntityManager().createQuery(allQuery);
+                return Optional.ofNullable(query.getResultList());
             }
+
         } catch (DaoException ex) {
             log.error("Error when getting all in Generic Dao [ DatabaseLayer ] {} ", ex);
             return Optional.empty();
@@ -479,19 +503,6 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.trace("Getting entity of type {} [ DatabaseLayer ] method:get", entityClass.getSimpleName());
         TypedQuery<T> typedQuery = getEntityManager().createQuery(query);
         return executeTypedQuery(typedQuery);
-    }
-
-    /**
-     *
-     * Executes a Typed Query
-     *
-     * @param query The query to executeTransaction
-     * @return The queried entity
-     * @throws DaoException
-     */
-    protected Optional<List<T>> executeTypedQueryList(TypedQuery<T> query) {
-        log.trace("Executing TypedQuery ( List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with TypedQuery )", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
-        return Optional.ofNullable(query.getResultList());
     }
 
     /**

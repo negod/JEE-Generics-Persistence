@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.4.xsd">
+
+    <changeSet id="Create transaction Table" author="Joakim Backede">
+
+        <createTable tableName="transaction">
+            <column name="id" type="varchar(36)" >
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="updatedDate" type="timestamp" >
+                <constraints nullable="false" />
+            </column>
+            <column name="transDate" type="date" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="sum" type="DECIMAL(12, 2)" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="saldo" type="DECIMAL(12, 2)" >
+                <constraints primaryKey="true" nullable="true"/>
+            </column>
+            <column name="budgetMonth" type="varchar(10)" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="budgetYear" type="Integer" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="originalValue" type="varchar(255)" >
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="company" type="varchar(36)" >
+                <constraints nullable="false"/>
+            </column>
+            <column name="ascociatedCompany" type="varchar(36)" >
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseColumnNames="company"
+                                 baseTableName="transaction"
+                                 constraintName="company_transaction_fk"
+                                 referencedColumnNames="id"
+                                 referencedTableName="company"
+                                 onDelete="NO ACTION"
+                                 onUpdate="RESTRICT"/>
+
+        <addForeignKeyConstraint baseColumnNames="ascociatedCompany"
+                                 baseTableName="transaction"
+                                 constraintName="ascociatedCompany_transaction_fk"
+                                 referencedColumnNames="id"
+                                 referencedTableName="company_accociation"
+                                 onDelete="NO ACTION"
+                                 onUpdate="RESTRICT"/>
+
+        <rollback>
+            <dropTable tableName="transaction" cascadeConstraints="true" />
+        </rollback>
+
+    </changeSet>
+
+</databaseChangeLog>

@@ -427,7 +427,6 @@ public class TestGenericDao extends ServiceEntityDao {
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getUsers() != null;
 
-        System.out.println(updatedServiceById.get().getUsers().toString());
         assert updatedServiceById.get().getUsers().size() == 2;
 
         UserEntity[] userArray = (UserEntity[]) updatedServiceById.get().getUsers().toArray(new UserEntity[updatedServiceById.get().getUsers().size()]);
@@ -505,7 +504,6 @@ public class TestGenericDao extends ServiceEntityDao {
         assert updatedServiceById.isPresent();
         assert updatedServiceById.get().getUsers() != null;
 
-        System.out.println(updatedServiceById.get().getUsers().toString());
         assert updatedServiceById.get().getUsers().size() == 2;
 
         UserEntity[] userArray = (UserEntity[]) updatedServiceById.get().getUsers().toArray(new UserEntity[updatedServiceById.get().getUsers().size()]);
@@ -557,7 +555,6 @@ public class TestGenericDao extends ServiceEntityDao {
         assert serviceByIdUser2Removed.isPresent();
         assert serviceByIdUser2Removed.get().getUsers() != null;
 
-        System.out.println(serviceByIdUser2Removed.get().getUsers().toString());
         assert serviceByIdUser2Removed.get().getUsers().isEmpty();
 
     }
