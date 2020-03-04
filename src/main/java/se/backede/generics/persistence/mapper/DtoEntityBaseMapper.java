@@ -5,11 +5,10 @@
  */
 package se.backede.generics.persistence.mapper;
 
-import se.backede.generics.persistence.dto.GenericDto;
 import se.backede.generics.persistence.entity.GenericEntity;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -17,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
 @Slf4j
-public class DtoEntityBaseMapper<D extends GenericDto, E extends GenericEntity> {
+public class DtoEntityBaseMapper<D, E extends GenericEntity> implements BaseMapper<D, E> {
 
     Class<E> entityClass;
     Class<D> dtoClass;
@@ -27,8 +26,9 @@ public class DtoEntityBaseMapper<D extends GenericDto, E extends GenericEntity> 
         this.entityClass = entityClass;
     }
 
-    public Optional<List<E>> mapToEntityList(List<D> dtoList) {
-        List<E> entityList = new ArrayList<>();
+    @Override
+    public Optional<Set<E>> mapToEntitySet(Set<D> dtoList) {
+        Set<E> entityList = new HashSet<>();
         for (D dto : dtoList) {
             Optional<E> entity = mapFromDtoToEntity(dto);
             if (entity.isPresent()) {
@@ -38,8 +38,9 @@ public class DtoEntityBaseMapper<D extends GenericDto, E extends GenericEntity> 
         return Optional.ofNullable(entityList);
     }
 
-    public Optional<List<D>> mapToDtoList(List<E> entityList) {
-        List<D> dtoList = new ArrayList<>();
+    @Override
+    public Optional<Set<D>> mapToDtoSet(Set<E> entityList) {
+        Set<D> dtoList = new HashSet<>();
         for (E entity : entityList) {
             Optional<D> dto = mapFromEntityToDto(entity);
             if (dto.isPresent()) {
@@ -50,16 +51,18 @@ public class DtoEntityBaseMapper<D extends GenericDto, E extends GenericEntity> 
         return Optional.ofNullable(dtoList);
     }
 
+    @Override
     public Optional<E> mapFromDtoToEntity(D dto) {
         try {
             E entity = Mapper.getInstance().getMapper().map(dto, entityClass);
             return Optional.ofNullable(entity);
         } catch (Exception e) {
-            log.error("[ Failed to map from dto {} to entity {} [ DTO EXT_ID: {} ] Error : {}", dto.getClass().getName(), entityClass.getName(), dto.getId(), e);
+            log.error("[ Failed to map from dto {} to entity {} [ DTO EXT_ID: {} ] Error : {}", dto.getClass().getName(), entityClass.getName(), dto.toString(), e);
             return Optional.empty();
         }
     }
 
+    @Override
     public Optional<D> mapFromEntityToDto(E entity) {
         try {
             D dto = Mapper.getInstance().getMapper().map(entity, dtoClass);
@@ -70,6 +73,7 @@ public class DtoEntityBaseMapper<D extends GenericDto, E extends GenericEntity> 
         }
     }
 
+    @Override
     public Optional<E> updateEntityFromDto(E entity, D dto) {
         try {
             Mapper.getInstance().getMapper().map(dto, entity);

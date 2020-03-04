@@ -18,7 +18,7 @@ public class GenericFilter {
 
     private Set<String> searchFields = new HashSet<>();
     private String globalSearchWord;
-    //private OrderBy order;
+    private OrderBy order;
     private Pagination pagination;
     private SearchMatch searchMatch;
 

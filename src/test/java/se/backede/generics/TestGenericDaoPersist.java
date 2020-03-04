@@ -60,10 +60,13 @@ public class TestGenericDaoPersist extends UserEntityDao {
     public void testPersistBatch() {
         Set<UserEntity> userEntitySet = UserEntityMock.getUserEntitySet(USER_AMOUNT);
 
+        super.startTransaction();
         Optional<Boolean> persist = super.persist(userEntitySet);
+        super.commitTransaction();
+
         assertTrue(persist.isPresent());
 
-        Optional<List<UserEntity>> all = super.getAll();
+        Optional<Set<UserEntity>> all = super.getAll();
         assertTrue(all.isPresent());
         assertEquals("There should be 10 posts inserted", USER_AMOUNT.longValue(), super.getAll().get().size());
 

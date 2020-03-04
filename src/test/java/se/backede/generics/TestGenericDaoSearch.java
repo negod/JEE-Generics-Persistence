@@ -41,6 +41,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     static CacheInitializer CACHE;
 
     String[] serviceEntityNames = new String[]{"NAME1", "name2", "n2ame", "Company1", "AbCd", "backede ab"};
+    String[] serviceEntityNamesInteger = new String[]{"1234", "4567", "7890", "9876", "5432", "1098"};
     String[] userEntityNames = new String[]{"NAME1", "name2", "n2ame", "Company1", "AbCd", "backede ab"};
     String[] domainEntityNames = new String[]{"NAME1", "name2", "n2ame", "Company1", "AbCd", "backede ab"};
 
@@ -108,7 +109,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
 
         addNewValuesToDb(userEntityNames);
 
-        Optional<List<ServiceEntity>> all = getAll();
+        Optional<Set<ServiceEntity>> all = getAll();
         assert all.isPresent();
         assert all.get().size() == serviceEntityNames.length;
 
@@ -152,7 +153,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
 
         addNewValuesToDb(userEntityNames);
 
-        Optional<List<ServiceEntity>> all = getAll();
+        Optional<Set<ServiceEntity>> all = getAll();
 
         assert all.isPresent();
 
@@ -215,6 +216,42 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         //Try search with whole uuid
         String SEARCHFIELD = "id";
         String SEARCHWORD = UUID;
+        Integer LIST_SIZE = 100;
+        Integer PAGE = 0;
+
+        Set<String> searchFields = new HashSet<>();
+
+        searchFields.add(SEARCHFIELD);
+
+        GenericFilter filter = ServiceEntitiesMock.getGenericFilter(searchFields, SEARCHWORD, LIST_SIZE, PAGE);
+        Optional<Set<ServiceEntity>> search = search(filter);
+
+        assert search.isPresent();
+        Set<ServiceEntity> searchRerult = search.get();
+
+        assertEquals("Size is not 1", 1, searchRerult.size());
+
+    }
+
+    @Test
+    public void testSearchWithIntegerValues() throws DaoException, ConstraintException {
+
+        clearDb();
+        addNewValuesToDb(serviceEntityNamesInteger);
+
+        log.debug("Test Search Service Entity with Integer value.");
+
+        String INtegerValue = "9764";
+
+        ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
+        entity.setName(INtegerValue);
+        startTransaction();
+        Optional<ServiceEntity> persistedEntity = persist(entity);
+        commitTransaction();
+
+        //Try search with whole uuid
+        String SEARCHFIELD = "name";
+        String SEARCHWORD = INtegerValue;
         Integer LIST_SIZE = 100;
         Integer PAGE = 0;
 

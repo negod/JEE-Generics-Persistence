@@ -5,7 +5,6 @@
  */
 package se.backede.generics.persistence.mapper;
 
-import se.backede.generics.persistence.dto.GenericDto;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -16,12 +15,12 @@ import lombok.extern.slf4j.Slf4j;
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
 @Slf4j
-public class DtoBaseMapper<D extends GenericDto, E extends GenericDto> {
+public class BaseMapperImpl<D, E> {
 
     Class<E> entityClass;
     Class<D> dtoClass;
 
-    public DtoBaseMapper(Class<D> dtoClass, Class<E> entityClass) {
+    public BaseMapperImpl(Class<D> dtoClass, Class<E> entityClass) {
         this.dtoClass = dtoClass;
         this.entityClass = entityClass;
     }
@@ -54,7 +53,7 @@ public class DtoBaseMapper<D extends GenericDto, E extends GenericDto> {
             E entity = Mapper.getInstance().getMapper().map(dto, entityClass);
             return Optional.ofNullable(entity);
         } catch (Exception e) {
-            log.error("[ Failed to map from dto {} to entity {} [ DTO EXT_ID: {} ] Error : {}", dto.getClass().getName(), entityClass.getName(), dto.getId(), e);
+            log.error("[ Failed to map from dto {} to entity {} [ DTO EXT_ID: {} ] Error : {}", dto.getClass().getName(), entityClass.getName(), dto.toString(), e);
             return Optional.empty();
         }
     }
@@ -64,7 +63,7 @@ public class DtoBaseMapper<D extends GenericDto, E extends GenericDto> {
             D dto = Mapper.getInstance().getMapper().map(entity, dtoClass);
             return Optional.ofNullable(dto);
         } catch (Exception e) {
-            log.error("[ Failed to map from entity {} to dto {} [ ENTITY_ID: {} ] Error : {}", entity.getClass().getName(), dtoClass.getName(), entity.getId(), e);
+            log.error("[ Failed to map from entity {} to dto {} [ ENTITY_ID: {} ] Error : {}", entity.getClass().getName(), dtoClass.getName(), entity.toString(), e);
             return Optional.empty();
         }
     }
@@ -74,7 +73,7 @@ public class DtoBaseMapper<D extends GenericDto, E extends GenericDto> {
             Mapper.getInstance().getMapper().map(dto, entity);
             return Optional.ofNullable(entity);
         } catch (Exception e) {
-            log.error("[ Failed to update entity {} from dto {} [ ENTITY_ID: {} ] Error : {}", entity.getClass().getName(), dto.getClass().getName(), entity.getId(), e);
+            log.error("[ Failed to update entity {} from dto {} [ ENTITY_ID: {} ] Error : {}", entity.getClass().getName(), dto.getClass().getName(), entity.toString(), e);
             return Optional.empty();
         }
     }
