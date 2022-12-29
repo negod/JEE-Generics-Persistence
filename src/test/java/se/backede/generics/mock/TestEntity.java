@@ -9,7 +9,7 @@ import se.backede.generics.persistence.entity.GenericEntity;
 import javax.persistence.Entity;
 import javax.persistence.Table;
 import lombok.Data;
-import org.hibernate.search.annotations.Field;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 
 /**
  *
@@ -20,7 +20,7 @@ import org.hibernate.search.annotations.Field;
 @Table(name = "TEST_ENTITY", schema = "TEST")
 public class TestEntity extends GenericEntity {
 
-    @Field(name = "name")
+    @FullTextField(name = "name")
     private String name;
     private Integer integerValue;
     private Double doubleValue;
@@ -32,5 +32,4 @@ public class TestEntity extends GenericEntity {
 //
 //    @IndexedEmbedded
 //    private Set<TestEntityEmbedded> entitySet;
-
 }

@@ -15,6 +15,8 @@ import java.util.UUID;
 import javax.persistence.Cacheable;
 import javax.persistence.Column;
 import javax.persistence.Id;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
@@ -29,12 +31,13 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
 /**
  *
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
-@MappedSuperclass
+//@MappedSuperclass
 @XmlTransient
 @XmlAccessorType(XmlAccessType.NONE)
 @ToString
@@ -42,13 +45,16 @@ import lombok.ToString;
 @Setter
 @EqualsAndHashCode
 @Cacheable(value = true)
-public abstract class GenericEntity implements Serializable {
+@MappedSuperclass
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+public class GenericEntity implements Serializable {
 
     @Id
     @NotNull(message = "External id cannot be null and should be set to UUID")
     @Column(unique = true, updatable = false, insertable = true, name = "id")
     @Pattern(regexp = "[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12}")
     @XmlElement
+    @KeywordField
     private String id;
 
     @NotNull(message = "Updated date cannot be null and all CRUD operations must have a date")

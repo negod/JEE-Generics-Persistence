@@ -1,17 +1,25 @@
-module se.backede.generics.persietence {
+module se.backede.generics.persistence {
+
+    requires static lombok;
+    requires static org.mapstruct;
 
     requires java.xml.bind;
     requires java.transaction;
-    requires lombok;
     requires java.persistence;
-    requires org.apache.commons.lang3;
-    requires org.apache.lucene.core;
-    requires org.hibernate.orm.core;
-    requires org.slf4j;
+    requires java.annotation;
 
+    requires org.apache.commons.lang3;
+
+    requires org.slf4j;
+    requires java.validation;
+
+    requires ehcache;
+
+    requires org.hibernate.orm.core;
     requires org.hibernate.search.engine;
-    requires org.hibernate.search.orm;
-    requires lucene.analyzers.common;
+    requires org.hibernate.search.mapper.orm;
+    requires org.hibernate.search.mapper.pojo;
+    requires org.hibernate.search.backend.lucene;
 
     exports se.backede.generics.persistence;
     exports se.backede.generics.persistence.entity;

@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
@@ -22,11 +22,17 @@ import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SetAttribute;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheException;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.config.CacheConfiguration;
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
+import org.ehcache.config.CacheConfiguration;
+import org.ehcache.config.builders.CacheConfigurationBuilder;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.ResourcePoolsBuilder;
+import org.hibernate.cache.CacheException;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
 /**
  *
@@ -48,31 +54,32 @@ public abstract class EntityRegistry {
         log.debug("Registering Entities in Cache {} [ DatabaseLayer ] method:extractSearchFields");
         Map<Class, Map<String, Class>> entitiesToRegister = new HashMap<>();
         Set<EntityType<?>> entities = getEntityManager().getMetamodel().getEntities();
-        for (EntityType<?> entity : entities) {
 
+        entities.forEach((EntityType<?> entity) -> {
             Map<String, Class> entityFields = new HashMap<>();
             Set<? extends Attribute<?, ?>> declaredAttributes = entity.getDeclaredAttributes();
 
-            for (Attribute<?, ?> declaredAttribute : declaredAttributes) {
-
+            declaredAttributes.forEach(declaredAttribute -> {
                 if (declaredAttribute.isCollection()) {
                     SetAttribute<?, ?> set = entity.getSet(declaredAttribute.getName());
                     entityFields.put(declaredAttribute.getName(), set.getElementType().getJavaType());
                 } else {
                     entityFields.put(declaredAttribute.getName(), declaredAttribute.getJavaType());
                 }
-            }
+            });
             registeredEntities.add(entity.getJavaType());
             entitiesToRegister.put(entity.getJavaType(), entityFields);
-        }
+        });
 
-        net.sf.ehcache.Cache entityCache = getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        Optional<Cache> entityCache = getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
-        if (!entityCache.isDisabled()) {
-            for (Entry<Class, Map<String, Class>> entry : entitiesToRegister.entrySet()) {
-                entityCache.put(new Element(entry.getKey(), entry.getValue()));
+        if (!entityCache.isPresent()) {
+            entitiesToRegister.entrySet().stream().map(entry -> {
+                entityCache.get().put(entry.getKey(), entry.getValue());
+                return entry;
+            }).forEachOrdered(entry -> {
                 log.debug("EntityClass {} with corresponding fields registered [ DatabaseLayer ] method:extractSearchFields", entry.getKey().getSimpleName());
-            }
+            });
         } else {
             log.error("Entity Cache disabled or not loaded!");
         }
@@ -84,14 +91,14 @@ public abstract class EntityRegistry {
             registerEnties();
         }
 
-        net.sf.ehcache.Cache entityNameCache = getOrCreateCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
+        Optional<Cache> entityNameCache = getOrCreateCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
 
-        if (!entityNameCache.isDisabled()) {
+        if (entityNameCache.isPresent()) {
             for (Class registeredEntity : registeredEntities) {
                 try {
                     Set<String> searchFields = extractSearchFields(registeredEntity, null);
                     registeredSearchFields = searchFields;
-                    entityNameCache.put(new Element(registeredEntity, searchFields));
+                    entityNameCache.get().put(registeredEntity, searchFields);
                 } catch (CacheException | DaoException ex) {
                     log.error("Error when registering searchFields {} [ DatabaseLayer ]", ex);
                 }
@@ -121,8 +128,11 @@ public abstract class EntityRegistry {
         }
 
         try {
-            String fieldAnnotation = org.hibernate.search.annotations.Field.class.getName();
-            String indexedEmbeddedAnnotation = org.hibernate.search.annotations.IndexedEmbedded.class.getName();
+            String fieldAnnotation = FullTextField.class.getName();
+            String keyWordAnnotation = KeywordField.class.getName();
+            String genericFieldAnnotation = GenericField.class.getName();
+            String indexedEmbeddedAnnotation = IndexedEmbedded.class.getName();
+
             Set<String> fields = new HashSet<>();
             Field[] declaredFields = entityClass.getDeclaredFields();
             for (Field field : declaredFields) {
@@ -130,6 +140,12 @@ public abstract class EntityRegistry {
                 for (Annotation annotation : annotations) {
 
                     if (annotation.annotationType().getName().equals(fieldAnnotation)) {
+                        fields.add(field.getName());
+                    }
+                    if (annotation.annotationType().getName().equals(keyWordAnnotation)) {
+                        fields.add(field.getName());
+                    }
+                    if (annotation.annotationType().getName().equals(genericFieldAnnotation)) {
                         fields.add(field.getName());
                     }
                     if (annotation.annotationType().getName().equals(indexedEmbeddedAnnotation)) {
@@ -165,18 +181,23 @@ public abstract class EntityRegistry {
         }
     }
 
-    private net.sf.ehcache.Cache getOrCreateCache(String cacheName) {
-        CacheManager existingCache = CacheManager.getInstance();
-        if (!existingCache.cacheExists(cacheName)) {
-            CacheConfiguration config = new CacheConfiguration(cacheName, 10000);
-            config.setEternal(true);
-            Cache newCache = new Cache(config);
-            existingCache.addCache(newCache);
-            log.info("New cache created with config  MAX ENTRIES LOCAL HEAP: {} CACHE NAME {} ", config.getMaxEntriesLocalHeap(), cacheName);
-        } else {
-            log.info("Cache {} already exists cache not added", cacheName);
+    private Optional<Cache> getOrCreateCache(String cacheName) {
+
+        CacheManager existingCache = CacheManagerBuilder.newCacheManagerBuilder().withCache(cacheName, getConfiguration()).build(Boolean.TRUE);
+
+        switch (existingCache.getStatus()) {
+            case AVAILABLE:
+                return Optional.of(existingCache.getCache(cacheName, Class.class, Set.class));
+            case UNINITIALIZED:
+                return Optional.of(existingCache.createCache(cacheName, getConfiguration()));
+            default:
+                throw new AssertionError();
         }
-        return existingCache.getCache(cacheName);
+
+    }
+
+    public CacheConfiguration<Class, Set> getConfiguration() {
+        return CacheConfigurationBuilder.newCacheConfigurationBuilder(Class.class, Set.class, ResourcePoolsBuilder.heap(10)).build();
     }
 
 }

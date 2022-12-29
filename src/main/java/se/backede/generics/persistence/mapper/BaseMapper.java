@@ -15,6 +15,7 @@ import java.util.Set;
  * @param <D>
  * @param <E>
  */
+
 public interface BaseMapper<D, E> {
 
     default Optional<Set<E>> mapToEntitySet(Set<D> dtoList) {

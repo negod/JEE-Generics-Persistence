@@ -5,6 +5,7 @@
  */
 package se.backede.generics;
 
+import java.util.Collection;
 import se.backede.generics.mock.service.DomainEntity;
 import se.backede.generics.mock.service.ServiceDetailEntity;
 import se.backede.generics.mock.service.ServiceEntity;
@@ -13,11 +14,15 @@ import se.backede.generics.persistence.PersistenceUnitTest;
 import se.backede.generics.persistence.entity.DefaultCacheNames;
 import se.backede.generics.persistence.entity.EntityRegistry;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 import javax.persistence.EntityManager;
+import javax.xml.bind.Element;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.Element;
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
+import org.ehcache.config.builders.CacheManagerBuilder;
+
 import org.junit.Test;
 
 /**
@@ -40,23 +45,28 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void test() {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        CacheManager manager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration()).build(Boolean.TRUE);
+        Cache<Class, Set> cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Set.class);
 
-        assert cache.getKeys().size() == 4;
-        assert cache.isKeyInCache(ServiceEntity.class);
-        assert cache.isKeyInCache(DomainEntity.class);
-        assert cache.isKeyInCache(ServiceDetailEntity.class);
-        assert cache.isKeyInCache(UserEntity.class);
+        Iterator<Cache.Entry<Class, Set>> iterator = cache.iterator();
+
+        int cacheSize = ((Collection<?>) iterator).size();
+
+        assert cacheSize == 4;
+        assert cache.containsKey(ServiceEntity.class);
+        assert cache.containsKey(DomainEntity.class);
+        assert cache.containsKey(ServiceDetailEntity.class);
+        assert cache.containsKey(UserEntity.class);
     }
 
     @Test
     public void testServiceEntity() {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
 
-        Element get = cache.get(ServiceEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
+        CacheManager manager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration()).build(Boolean.TRUE);
+        Cache<Class, Set> cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Set.class);
+
+        Set get = cache.get(ServiceEntity.class);
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 4;
 
@@ -73,13 +83,13 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void testDomainEntity() {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        CacheManager manager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration()).build(Boolean.TRUE);
+        Cache<Class, Set> cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Set.class);
 
-        Element get = cache.get(DomainEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.<String, Class>getObjectValue();
+        Set get = cache.get(DomainEntity.class);
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
-        assert cachedData.size() == 2;
+        assert cachedData.entrySet().size() == 2;
 
         assert cachedData.containsKey("name");
         assert cachedData.containsKey("services");
@@ -90,11 +100,11 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void testUserEntity() {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        CacheManager manager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration()).build(Boolean.TRUE);
+        Cache<Class, Set> cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Set.class);
 
-        Element get = cache.get(UserEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
+        Set get = cache.get(UserEntity.class);
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 2;
 
@@ -107,11 +117,11 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void testServiceDetailEntity() {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        CacheManager manager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration()).build(Boolean.TRUE);
+        Cache<Class, Set> cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Set.class);
 
-        Element get = cache.get(ServiceDetailEntity.class);
-        HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getObjectValue();
+        Set get = cache.get(ServiceDetailEntity.class);
+        HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 2;
 

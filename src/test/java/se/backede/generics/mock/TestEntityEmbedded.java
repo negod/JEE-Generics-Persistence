@@ -8,7 +8,7 @@ package se.backede.generics.mock;
 import se.backede.generics.persistence.entity.GenericEntity;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import org.hibernate.search.annotations.Field;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 
 /**
  *
@@ -18,7 +18,7 @@ import org.hibernate.search.annotations.Field;
 @Entity
 public class TestEntityEmbedded extends GenericEntity {
 
-    @Field
+    @FullTextField
     private String value;
 
     public String getValue() {

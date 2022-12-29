@@ -1,9 +1,7 @@
 package se.backede.generics.persistence;
 
 import se.backede.generics.persistence.entity.DefaultCacheNames;
-import se.backede.generics.persistence.entity.GenericEntity;
 import se.backede.generics.persistence.exception.DaoException;
-import se.backede.generics.persistence.mapper.Mapper;
 import se.backede.generics.persistence.search.GenericFilter;
 import se.backede.generics.persistence.search.Pagination;
 import se.backede.generics.persistence.update.ObjectUpdate;
@@ -16,6 +14,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -30,15 +29,23 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.ehcache.Cache;
+import org.ehcache.CacheManager;
+import org.ehcache.config.CacheConfiguration;
+import org.ehcache.config.builders.CacheConfigurationBuilder;
+import org.ehcache.config.builders.CacheManagerBuilder;
+import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.hibernate.Session;
+import org.hibernate.cache.CacheException;
 import org.hibernate.exception.ConstraintViolationException;
-import org.hibernate.search.jpa.FullTextEntityManager;
-import org.hibernate.search.jpa.FullTextQuery;
-import org.hibernate.search.jpa.Search;
-import org.hibernate.search.query.dsl.PhraseContext;
-import org.hibernate.search.query.dsl.PhraseMatchingContext;
-import org.hibernate.search.query.dsl.QueryBuilder;
+import org.hibernate.search.engine.search.query.SearchResult;
+import org.hibernate.search.mapper.orm.Search;
+import org.hibernate.search.mapper.orm.massindexing.MassIndexer;
+import org.hibernate.search.mapper.orm.session.SearchSession;
+import se.backede.generics.persistence.dto.GenericDto;
+import se.backede.generics.persistence.entity.GenericEntity;
 import se.backede.generics.persistence.entity.GenericEntity_;
+import se.backede.generics.persistence.mapper.GenericMapper;
 
 /**
  *
@@ -57,6 +64,8 @@ public abstract class GenericDao<T extends GenericEntity> {
 
     public abstract EntityManager getEntityManager(String name);
 
+    CacheManager cacheManager;
+
     Session hibernateSession;
 
     /**
@@ -68,6 +77,9 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
         this.className = entityClass.getSimpleName();
         this.searchFields.addAll(getSearchFieldsFromCache());
+        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.SEARCH_FIELD_CACHE, getCacheConfiguration()).build();
+        cacheManager.init();
+
         log.trace("Instantiating DONE for GenericDao. Entity class: {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
     }
 
@@ -88,15 +100,14 @@ public abstract class GenericDao<T extends GenericEntity> {
     private Set<String> getSearchFieldsFromCache() {
         log.trace("Getting SearchFields for class: {} [ DatabaseLayer ] method:getSearchFieldsFromCache", entityClass.getSimpleName());
         try {
-            CacheManager manager = CacheManager.getInstance();
-            Cache cache = manager.getCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
+
+            Cache<Class, Set> cache = cacheManager.getCache(className, Class.class, Set.class);
+
             if (cache != null) {
-                if (!cache.isDisabled()) {
-                    if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
-                        return (HashSet<String>) cache.get(entityClass).getObjectValue();
-                    } else {
-                        log.debug("Cache for entityclass {} not present in cache", entityClass.getCanonicalName());
-                    }
+                if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
+                    return (HashSet<String>) cache.get(entityClass);
+                } else {
+                    log.debug("Cache for entityclass {} not present in cache", entityClass.getCanonicalName());
                 }
             } else {
                 log.error("CACHE is null!");
@@ -179,11 +190,9 @@ public abstract class GenericDao<T extends GenericEntity> {
     }
 
     private Optional<Class<?>> getEntityClassToUpdate(String objectName) {
-        CacheManager manager = CacheManager.getInstance();
-        Cache cache = manager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
-        if (cache.isKeyInCache(entityClass)) {
-            Element get = cache.get(entityClass);
-            HashMap<String, Class> cachedData = (HashMap<String, Class>) get.getValue();
+        Cache<Class, Map> cache = cacheManager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        if (cache.containsKey(entityClass)) {
+            HashMap<String, Class> cachedData = (HashMap<String, Class>) cache.get(entityClass);;
             Class<?> entityClassToUpdate = cachedData.get(objectName);
             return Optional.ofNullable(entityClassToUpdate);
         } else {
@@ -277,8 +286,8 @@ public abstract class GenericDao<T extends GenericEntity> {
     public Optional<T> update(T entity) {
         log.debug("Updating entity of type {} with values {} [ DatabaseLayer ] method:update", entityClass.getSimpleName(), entity.toString());
         return getById(entity.getId()).map(entityToUpdate -> {
-            Mapper.getInstance().getMapper().map(entity, entityToUpdate);
-            entityToUpdate.setUpdatedDate(new Date());
+            GenericDto entityToDto = GenericMapper.INSTANCE.entityToDto(entity);
+            entityToDto.setUpdatedDate(new Date());
             return Optional.ofNullable(getEntityManager().merge(entityToUpdate));
         }).orElse(Optional.empty());
     }
@@ -371,12 +380,16 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.debug("Getting all values of type {} and filter {} [ DatabaseLayer ] method:search ", entityClass.getSimpleName(), filter.toString());
         try {
 
-            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
-            QueryBuilder qb = fullTextEntityManager.getSearchFactory().buildQueryBuilder().forEntity(entityClass).get();
+            SearchSession searchSession = Search.session(getEntityManager());
+
+            SearchResult<T> result;
 
             String[] keys = filter.getSearchFields().toArray(new String[filter.getSearchFields().size()]);
             Optional<String> searchWord = Optional.ofNullable(filter.getGlobalSearchWord());
             Optional<Pagination> pagination = Optional.ofNullable(filter.getPagination());
+
+            int firstRecord = 1;
+            int lastRecord = 20;
 
             if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent()) {
 
@@ -390,50 +403,33 @@ public abstract class GenericDao<T extends GenericEntity> {
                     }
                 }
 
-                log.trace("Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:search", keys, searchWord.get().toLowerCase());
-
-                org.apache.lucene.search.Query query;
-
-                switch (filter.getSearchMatch()) {
-                    case EXACT_MATCH:
-                        PhraseContext phrase = qb.phrase().withSlop(0);
-                        PhraseMatchingContext onField = phrase.onField(keys[0]);
-                        if (keys.length > 1) {
-                            for (int i = 1; i < keys.length; i++) {
-                                onField.andField(keys[i]);
-                            }
-                        }
-                        query = onField.sentence(keyword.toLowerCase()).createQuery();
-                        break;
-                    case STANDARD:
-                        query = qb
-                                .keyword()
-                                .onFields(keys)
-                                .matching(keyword.toLowerCase())
-                                .createQuery();
-                        break;
-                    case WILDCARD:
-                        query = qb
-                                .keyword()
-                                .wildcard()
-                                .onFields(keys)
-                                .matching(keyword.toLowerCase())
-                                .createQuery();
-                        break;
-                    default:
-                        throw new AssertionError();
-                }
-
-                FullTextQuery persistenceQuery = fullTextEntityManager.createFullTextQuery(query, entityClass);
-
                 if (pagination.isPresent()) {
-                    persistenceQuery.setMaxResults(filter.getPagination().getListSize());
-                    persistenceQuery.setFirstResult(filter.getPagination().getListSize() * filter.getPagination().getPage());
+                    firstRecord = pagination.get().getPage() * pagination.get().getListSize();
+                    lastRecord = firstRecord + pagination.get().getListSize();
                 } else {
                     log.debug("Pagination not present in query returning all data");
                 }
 
-                Set<T> resultList = new HashSet<T>(persistenceQuery.getResultList());
+                log.trace("Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:search", keys, searchWord.get().toLowerCase());
+
+                switch (filter.getSearchMatch()) {
+                    case EXACT_MATCH ->
+                        result = searchSession.search(entityClass).where(f -> f.match()
+                                .fields((String[]) filter.getSearchFields().toArray())
+                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
+                    case STANDARD ->
+                        result = searchSession.search(entityClass).where(f -> f.match()
+                                .fields((String[]) filter.getSearchFields().toArray())
+                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
+                    case WILDCARD ->
+                        result = searchSession.search(entityClass).where(f -> f.match()
+                                .fields((String[]) filter.getSearchFields().toArray())
+                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
+                    default ->
+                        throw new AssertionError();
+                }
+
+                Set<T> resultList = new HashSet<T>(result.hits());
                 return Optional.ofNullable(resultList);
             } else {
                 log.error("Either search fields or search word or all is not present, aborting search [ DatabaseLayer ] method:search, "
@@ -451,7 +447,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * Gets all entities that are persisted to the database
      *
      * @param pagination the pagination for the query
-     * @return All persisted entities
+     * @return All perssted entities
      * @throws DaoException
      */
     public Optional<Set<T>> getAll(Pagination pagination) {
@@ -569,8 +565,9 @@ public abstract class GenericDao<T extends GenericEntity> {
     public Boolean indexEntity() {
         log.debug("Starting Lucene indexing of type {} [ DatabaseLayer ] method:indexEntity", entityClass.getSimpleName());
         try {
-            FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(getEntityManager());
-            fullTextEntityManager.createIndexer().startAndWait();
+            SearchSession searchSession = Search.session(getEntityManager());
+            MassIndexer indexer = searchSession.massIndexer(entityClass).threadsToLoadObjects(7);
+            indexer.startAndWait();
             log.debug("SUCCESS! Indexing started....... returning {} [ DatabaseLayer ]", this.className);
         } catch (InterruptedException ex) {
             log.error("Failure when indexing {} [ DatabaseLayer ] ErrorMessage: {}", this.className, ex);
@@ -635,6 +632,10 @@ public abstract class GenericDao<T extends GenericEntity> {
             return get;
         };
         return getCompany.get();
+    }
+
+    public CacheConfiguration<Class, Map> getCacheConfiguration() {
+        return CacheConfigurationBuilder.newCacheConfigurationBuilder(Class.class, Map.class, ResourcePoolsBuilder.heap(10)).build();
     }
 
 }

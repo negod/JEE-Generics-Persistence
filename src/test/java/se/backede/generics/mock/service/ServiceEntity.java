@@ -22,21 +22,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
-import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
-import org.apache.lucene.analysis.standard.StandardTokenizerFactory;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Analyzer;
-import org.hibernate.search.annotations.AnalyzerDef;
-import org.hibernate.search.annotations.ContainedIn;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Index;
-import org.hibernate.search.annotations.Indexed;
-import org.hibernate.search.annotations.IndexedEmbedded;
-import org.hibernate.search.annotations.Store;
-import org.hibernate.search.annotations.TokenFilterDef;
-import org.hibernate.search.annotations.TokenizerDef;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 
 /**
  *
@@ -51,31 +41,21 @@ import org.hibernate.search.annotations.TokenizerDef;
 @Indexed
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = EntityConstants.SERVICE)
-@AnalyzerDef(name = "service_customanalyzer",
-        tokenizer = @TokenizerDef(factory = StandardTokenizerFactory.class),
-        filters = {
-            @TokenFilterDef(factory = LowerCaseFilterFactory.class)
-        })
 public class ServiceEntity extends GenericEntity {
 
-    @Analyzer(definition = "service_customanalyzer")
-    @Field(index = Index.YES, analyze = Analyze.YES, store = Store.YES)
+    @FullTextField
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
-    @ContainedIn
-    @IndexedEmbedded(depth = 3)
     @OneToOne(mappedBy = "service", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private ServiceDetailEntity detail;
 
-    @ContainedIn
-    @IndexedEmbedded(depth = 3)
+    @IndexedEmbedded(includeDepth = 3)
     @JoinColumn(name = "domain_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private DomainEntity domain;
 
-    @ContainedIn
-    @IndexedEmbedded(depth = 3)
+    @IndexedEmbedded(includeDepth = 3)
     @JoinTable(name = "service_user",
             joinColumns = {
                 @JoinColumn(name = "service_id", referencedColumnName = "id")},
