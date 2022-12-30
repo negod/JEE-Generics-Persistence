@@ -47,7 +47,14 @@ public abstract class EntityRegistry {
     private Set<Class> registeredEntities = new HashSet<>();
     private Set<String> registeredSearchFields = new HashSet<>();
 
+    public CacheManager cacheManager;
+
     public EntityRegistry() {
+        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
+        cacheManager.init();
+
+        cacheManager.createCache(DefaultCacheNames.SEARCH_FIELD_CACHE, getConfiguration(Class.class, Set.class));
+        cacheManager.createCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration(Class.class, Map.class));
     }
 
     public void registerEnties() {
@@ -71,7 +78,7 @@ public abstract class EntityRegistry {
             entitiesToRegister.put(entity.getJavaType(), entityFields);
         });
 
-        Optional<Cache> entityCache = getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE);
+        Optional<Cache> entityCache = getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
 
         if (!entityCache.isPresent()) {
             entitiesToRegister.entrySet().stream().map(entry -> {
@@ -91,7 +98,7 @@ public abstract class EntityRegistry {
             registerEnties();
         }
 
-        Optional<Cache> entityNameCache = getOrCreateCache(DefaultCacheNames.SEARCH_FIELD_CACHE);
+        Optional<Cache> entityNameCache = getOrCreateCache(DefaultCacheNames.SEARCH_FIELD_CACHE, Class.class, Set.class);
 
         if (entityNameCache.isPresent()) {
             for (Class registeredEntity : registeredEntities) {
@@ -114,9 +121,9 @@ public abstract class EntityRegistry {
             registerSearchFields();
         }
 
-        for (String registeredSearchField : registeredSearchFields) {
-            getOrCreateCache(registeredSearchField);
-        }
+        //for (String registeredSearchField : registeredSearchFields) {
+        //    getOrCreateCache(registeredSearchField, Class.class, Set.class);
+        //}
 
     }
 
@@ -181,23 +188,26 @@ public abstract class EntityRegistry {
         }
     }
 
-    private Optional<Cache> getOrCreateCache(String cacheName) {
+    public Optional<Cache> getOrCreateCache(String cacheName, Class clazz, Class clazz2) {
 
-        CacheManager existingCache = CacheManagerBuilder.newCacheManagerBuilder().withCache(cacheName, getConfiguration()).build(Boolean.TRUE);
-
-        switch (existingCache.getStatus()) {
-            case AVAILABLE:
-                return Optional.of(existingCache.getCache(cacheName, Class.class, Set.class));
-            case UNINITIALIZED:
-                return Optional.of(existingCache.createCache(cacheName, getConfiguration()));
-            default:
+        switch (cacheManager.getStatus()) {
+            case AVAILABLE -> {
+            }
+            case UNINITIALIZED -> {
+                cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
+                cacheManager.init();
+            }
+            default ->
                 throw new AssertionError();
         }
 
+        Cache cache = cacheManager.getCache(cacheName, clazz, clazz2);
+        return Optional.ofNullable(cache);
+
     }
 
-    public CacheConfiguration<Class, Set> getConfiguration() {
-        return CacheConfigurationBuilder.newCacheConfigurationBuilder(Class.class, Set.class, ResourcePoolsBuilder.heap(10)).build();
+    public CacheConfiguration<Class, Set> getConfiguration(Class clazz, Class clazz2) {
+        return CacheConfigurationBuilder.newCacheConfigurationBuilder(clazz, clazz2, ResourcePoolsBuilder.heap(10)).build();
     }
 
 }

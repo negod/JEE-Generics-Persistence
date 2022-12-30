@@ -77,7 +77,8 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
         this.className = entityClass.getSimpleName();
         this.searchFields.addAll(getSearchFieldsFromCache());
-        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().withCache(DefaultCacheNames.SEARCH_FIELD_CACHE, getCacheConfiguration()).build();
+
+        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
         cacheManager.init();
 
         log.trace("Instantiating DONE for GenericDao. Entity class: {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
