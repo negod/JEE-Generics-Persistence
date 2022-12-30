@@ -43,11 +43,13 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = EntityConstants.SERVICE)
 public class ServiceEntity extends GenericEntity {
 
-    @FullTextField
+    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
-    @OneToOne(mappedBy = "service", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @IndexedEmbedded()
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "detail_id", referencedColumnName = "id")
     private ServiceDetailEntity detail;
 
     @IndexedEmbedded(includeDepth = 3)

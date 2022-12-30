@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS service (
     id VARCHAR(36) NOT NULL, 
     updatedDate TIMESTAMP NOT NULL, 
     name VARCHAR(36) NOT NULL, 
-    domain_id VARCHAR(36) NULL, 
+    domain_id VARCHAR(36) NULL,
+    detail_id VARCHAR(36) NULL, 
     PRIMARY KEY (id), 
     UNIQUE (internalId), 
     UNIQUE (name)

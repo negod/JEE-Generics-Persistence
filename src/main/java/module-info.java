@@ -9,6 +9,7 @@ module se.backede.generics.persistence {
     requires java.annotation;
 
     requires org.apache.commons.lang3;
+    requires org.apache.commons.collections4;
 
     requires org.slf4j;
     requires java.validation;

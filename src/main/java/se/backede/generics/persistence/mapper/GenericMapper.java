@@ -11,14 +11,11 @@ import se.backede.generics.persistence.entity.GenericEntity;
 
 /**
  *
- * @author joaki
+ * @author Joakim Backede
  */
 @Mapper
-public interface GenericMapper {
+public interface GenericMapper /*extends BaseMapper<GenericEntity, GenericDto>*/ {
 
     GenericMapper INSTANCE = Mappers.getMapper(GenericMapper.class);
-
-    GenericDto entityToDto(GenericEntity entity);
-    GenericEntity dtoToEntity(GenericDto dto);
 
 }

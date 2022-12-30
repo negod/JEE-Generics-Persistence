@@ -56,7 +56,10 @@ public class TestGenericDao extends ServiceEntityDao {
         log.debug("Asserting fields");
         assert getEntityClass().equals(ServiceEntity.class);
         assert getClassName().equals(ServiceEntity.class.getSimpleName());
-        assert getSearchFields().equals(new HashSet<>(Arrays.asList(new String[]{"detail.name", "users.name", "domain.name", "name"})));
+
+        Set<String> searchFields = getSearchFields();
+
+        assert searchFields.equals(new HashSet<>(Arrays.asList(new String[]{"detail.name", "users.name", "domain.name", "name"})));
     }
 
     @Test
@@ -80,7 +83,6 @@ public class TestGenericDao extends ServiceEntityDao {
 
         String NAME = "PersistName2";
         String UPDATED_NAME = "UPDATED_NAME";
-        String ID = "";
 
         ServiceEntity entity = ServiceEntitiesMock.getServiceEntity();
         entity.setName(NAME);
@@ -93,14 +95,13 @@ public class TestGenericDao extends ServiceEntityDao {
         assert persist.get().getName().equals(NAME);
 
         Optional<ServiceEntity> byId = executeTransaction(() -> getById(NEW_ID));
-
         assert byId.isPresent();
 
         byId.get().setName(UPDATED_NAME);
 
         Optional<ServiceEntity> update = executeTransaction(() -> update(byId.get()));
 
-        Optional<ServiceEntity> byIdUpdated = getById(NEW_ID);
+        Optional<ServiceEntity> byIdUpdated = executeTransaction(() -> getById(NEW_ID));
 
         assert byIdUpdated.isPresent();
         assert byIdUpdated.get().getName().equals(UPDATED_NAME);

@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import javax.persistence.EntityManager;
 import javax.persistence.metamodel.Attribute;
@@ -22,17 +21,12 @@ import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SetAttribute;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.ehcache.Cache;
-import org.ehcache.CacheManager;
-import org.ehcache.config.CacheConfiguration;
-import org.ehcache.config.builders.CacheConfigurationBuilder;
-import org.ehcache.config.builders.CacheManagerBuilder;
-import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.hibernate.cache.CacheException;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.GenericField;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import se.backede.generics.persistence.CacheHelper;
 
 /**
  *
@@ -47,14 +41,7 @@ public abstract class EntityRegistry {
     private Set<Class> registeredEntities = new HashSet<>();
     private Set<String> registeredSearchFields = new HashSet<>();
 
-    public CacheManager cacheManager;
-
     public EntityRegistry() {
-        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
-        cacheManager.init();
-
-        cacheManager.createCache(DefaultCacheNames.SEARCH_FIELD_CACHE, getConfiguration(Class.class, Set.class));
-        cacheManager.createCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, getConfiguration(Class.class, Map.class));
     }
 
     public void registerEnties() {
@@ -78,18 +65,12 @@ public abstract class EntityRegistry {
             entitiesToRegister.put(entity.getJavaType(), entityFields);
         });
 
-        Optional<Cache> entityCache = getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
-
-        if (!entityCache.isPresent()) {
-            entitiesToRegister.entrySet().stream().map(entry -> {
-                entityCache.get().put(entry.getKey(), entry.getValue());
-                return entry;
-            }).forEachOrdered(entry -> {
-                log.debug("EntityClass {} with corresponding fields registered [ DatabaseLayer ] method:extractSearchFields", entry.getKey().getSimpleName());
-            });
-        } else {
-            log.error("Entity Cache disabled or not loaded!");
-        }
+        entitiesToRegister.entrySet().stream().map(entry -> {
+            CacheHelper.getInstance().getEnrityRegistryCache().put(entry.getKey(), entry.getValue());
+            return entry;
+        }).forEachOrdered(entry -> {
+            log.debug("EntityClass {} with corresponding fields registered [ DatabaseLayer ] method:extractSearchFields", entry.getKey().getSimpleName());
+        });
     }
 
     public void registerSearchFields() {
@@ -98,20 +79,14 @@ public abstract class EntityRegistry {
             registerEnties();
         }
 
-        Optional<Cache> entityNameCache = getOrCreateCache(DefaultCacheNames.SEARCH_FIELD_CACHE, Class.class, Set.class);
-
-        if (entityNameCache.isPresent()) {
-            for (Class registeredEntity : registeredEntities) {
-                try {
-                    Set<String> searchFields = extractSearchFields(registeredEntity, null);
-                    registeredSearchFields = searchFields;
-                    entityNameCache.get().put(registeredEntity, searchFields);
-                } catch (CacheException | DaoException ex) {
-                    log.error("Error when registering searchFields {} [ DatabaseLayer ]", ex);
-                }
+        for (Class registeredEntity : registeredEntities) {
+            try {
+                Set<String> searchFields = extractSearchFields(registeredEntity, null);
+                registeredSearchFields = searchFields;
+                CacheHelper.getInstance().getSearchFieldCache().put(registeredEntity, searchFields);
+            } catch (CacheException | DaoException ex) {
+                log.error("Error when registering searchFields {} [ DatabaseLayer ]", ex);
             }
-        } else {
-            log.error("Entity Name Cache disabled or not loaded!");
         }
     }
 
@@ -121,10 +96,9 @@ public abstract class EntityRegistry {
             registerSearchFields();
         }
 
-        //for (String registeredSearchField : registeredSearchFields) {
-        //    getOrCreateCache(registeredSearchField, Class.class, Set.class);
-        //}
-
+        for (String registeredSearchField : registeredSearchFields) {
+            CacheHelper.getInstance().createCacheIfNotExistent(registeredSearchField, log, log);
+        }
     }
 
     private Set<String> extractSearchFields(Class<?> entityClass, Set<String> alreadyExtractedClasses) throws DaoException {
@@ -186,28 +160,6 @@ public abstract class EntityRegistry {
             log.error("Error when extracting searchFields {} [ DatabaseLayer ]", ex);
             throw new DaoException("Error whgen extracting serachFields {}", ex);
         }
-    }
-
-    public Optional<Cache> getOrCreateCache(String cacheName, Class clazz, Class clazz2) {
-
-        switch (cacheManager.getStatus()) {
-            case AVAILABLE -> {
-            }
-            case UNINITIALIZED -> {
-                cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
-                cacheManager.init();
-            }
-            default ->
-                throw new AssertionError();
-        }
-
-        Cache cache = cacheManager.getCache(cacheName, clazz, clazz2);
-        return Optional.ofNullable(cache);
-
-    }
-
-    public CacheConfiguration<Class, Set> getConfiguration(Class clazz, Class clazz2) {
-        return CacheConfigurationBuilder.newCacheConfigurationBuilder(clazz, clazz2, ResourcePoolsBuilder.heap(10)).build();
     }
 
 }

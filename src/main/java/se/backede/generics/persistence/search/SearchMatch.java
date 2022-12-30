@@ -10,5 +10,5 @@ package se.backede.generics.persistence.search;
  * @author Joakim Backede ( joakim.backede@outlook.com )
  */
 public enum SearchMatch {
-    WILDCARD, STANDARD, EXACT_MATCH;
+    WILDCARD, EXACT_MATCH;
 }

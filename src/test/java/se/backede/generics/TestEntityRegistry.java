@@ -5,24 +5,22 @@
  */
 package se.backede.generics;
 
-import java.util.Collection;
 import se.backede.generics.mock.service.DomainEntity;
 import se.backede.generics.mock.service.ServiceDetailEntity;
 import se.backede.generics.mock.service.ServiceEntity;
 import se.backede.generics.mock.service.UserEntity;
 import se.backede.generics.persistence.PersistenceUnitTest;
-import se.backede.generics.persistence.entity.DefaultCacheNames;
 import se.backede.generics.persistence.entity.EntityRegistry;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.ehcache.Cache;
 
 import org.junit.Test;
+import se.backede.generics.persistence.CacheHelper;
 
 /**
  *
@@ -44,27 +42,26 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void test() {
-        Optional<Cache> cache = super.getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Set> searchFieldCache = CacheHelper.getInstance().getSearchFieldCache();
 
-        assert cache.isPresent();
-        Iterator<Cache.Entry<Class, Set>> iterator = cache.get().iterator();
+        assert searchFieldCache != null;
 
-        int cacheSize = ((Collection<?>) iterator).size();
+        long cacheSize = StreamSupport.stream(searchFieldCache.spliterator(), false).count();
 
         assert cacheSize == 4;
-        assert cache.get().containsKey(ServiceEntity.class);
-        assert cache.get().containsKey(DomainEntity.class);
-        assert cache.get().containsKey(ServiceDetailEntity.class);
-        assert cache.get().containsKey(UserEntity.class);
+        assert searchFieldCache.containsKey(ServiceEntity.class);
+        assert searchFieldCache.containsKey(DomainEntity.class);
+        assert searchFieldCache.containsKey(ServiceDetailEntity.class);
+        assert searchFieldCache.containsKey(UserEntity.class);
     }
 
     @Test
     public void testServiceEntity() {
 
-        Optional<Cache> cache = super.getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Map> enrityRegistryCache = CacheHelper.getInstance().getEnrityRegistryCache();
 
-        assert cache.isPresent();
-        Map get = (Map) cache.get().get(ServiceEntity.class);
+        assert enrityRegistryCache != null;
+        Map get = (Map) enrityRegistryCache.get(ServiceEntity.class);
         HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 4;
@@ -82,9 +79,10 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void testDomainEntity() {
-        Optional<Cache> cache = super.getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Map> enrityRegistryCache = CacheHelper.getInstance().getEnrityRegistryCache();
 
-        Map get = (Map) cache.get().get(DomainEntity.class);
+        assert enrityRegistryCache != null;
+        Map get = (Map) enrityRegistryCache.get(DomainEntity.class);
         HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.entrySet().size() == 2;
@@ -98,9 +96,10 @@ public class TestEntityRegistry extends EntityRegistry {
 
     @Test
     public void testUserEntity() {
-        Optional<Cache> cache = super.getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Map> enrityRegistryCache = CacheHelper.getInstance().getEnrityRegistryCache();
 
-        Map get = (Map) cache.get().get(UserEntity.class);
+        assert enrityRegistryCache != null;
+        Map get = (Map) enrityRegistryCache.get(UserEntity.class);
         HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 2;
@@ -115,9 +114,10 @@ public class TestEntityRegistry extends EntityRegistry {
     @Test
     public void testServiceDetailEntity() {
 
-        Optional<Cache> cache = super.getOrCreateCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Map> enrityRegistryCache = CacheHelper.getInstance().getEnrityRegistryCache();
 
-        Map get = (Map) cache.get().get(ServiceDetailEntity.class);
+        assert enrityRegistryCache != null;
+        Map get = (Map) enrityRegistryCache.get(ServiceDetailEntity.class);
         HashMap<String, Class> cachedData = (HashMap<String, Class>) get;
 
         assert cachedData.size() == 2;

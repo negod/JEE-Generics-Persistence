@@ -34,7 +34,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @Indexed
 public class DomainEntity extends GenericEntity {
 
-    @FullTextField
+    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 

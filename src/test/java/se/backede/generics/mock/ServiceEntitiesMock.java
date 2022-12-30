@@ -10,11 +10,11 @@ import se.backede.generics.mock.service.ServiceEntity;
 import se.backede.generics.mock.service.UserEntity;
 import se.backede.generics.persistence.search.GenericFilter;
 import se.backede.generics.persistence.search.Pagination;
-import se.backede.generics.persistence.search.SearchMatch;
 import se.backede.generics.persistence.update.ObjectUpdate;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import se.backede.generics.persistence.search.SearchMatch;
 
 /**
  *

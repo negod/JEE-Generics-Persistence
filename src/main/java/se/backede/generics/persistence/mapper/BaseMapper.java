@@ -6,8 +6,8 @@
 package se.backede.generics.persistence.mapper;
 
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+import org.mapstruct.Mapping;
 
 /**
  *
@@ -15,36 +15,29 @@ import java.util.Set;
  * @param <D>
  * @param <E>
  */
-
 public interface BaseMapper<D, E> {
 
-    default Optional<Set<E>> mapToEntitySet(Set<D> dtoList) {
+    default Set<E> mapToEntitySet(Set<D> dtoList) {
         Set<E> entityList = new HashSet<>();
         for (D dto : dtoList) {
-            Optional<E> entity = mapFromDtoToEntity(dto);
-            if (entity.isPresent()) {
-                entityList.add(entity.get());
-            }
+            entityList.add(mapFromDtoToEntity(dto));
         }
-        return Optional.ofNullable(entityList);
+        return entityList;
     }
 
-    default Optional<Set<D>> mapToDtoSet(Set<E> entityList) {
+    default Set<D> mapToDtoSet(Set<E> entityList) {
         Set<D> dtoList = new HashSet<>();
         for (E entity : entityList) {
-            Optional<D> dto = mapFromEntityToDto(entity);
-            if (dto.isPresent()) {
-                dtoList.add(dto.get());
-            }
-
+            dtoList.add(mapFromEntityToDto(entity));
         }
-        return Optional.ofNullable(dtoList);
+        return dtoList;
     }
 
-    public Optional<E> mapFromDtoToEntity(D dto);
+    @Mapping(source = "id", target = "id")
+    public E mapFromDtoToEntity(D dto);
 
-    public Optional<D> mapFromEntityToDto(E entity);
+    public D mapFromEntityToDto(E entity);
 
-    public Optional<E> updateEntityFromDto(E entity, D dto);
+    public E updateEntityFromDto(E entity, D dto);
 
 }

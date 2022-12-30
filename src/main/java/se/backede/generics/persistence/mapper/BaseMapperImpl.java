@@ -52,7 +52,7 @@ public class BaseMapperImpl<D extends GenericDto, E extends GenericEntity> {
 
     public Optional<GenericEntity> mapFromDtoToEntity(D dto) {
         try {
-            GenericEntity entity = Mapper.getInstance().map(dto);
+            GenericEntity entity = (GenericEntity) Mapper.getInstance().map(dto).get();
             return Optional.ofNullable(entity);
         } catch (Exception e) {
             log.error("[ Failed to map from dto {} to entity {} [ DTO EXT_ID: {} ] Error : {}", dto.getClass().getName(), entityClass.getName(), dto.toString(), e);
@@ -62,7 +62,7 @@ public class BaseMapperImpl<D extends GenericDto, E extends GenericEntity> {
 
     public Optional<GenericDto> mapFromEntityToDto(E entity) {
         try {
-            GenericDto dto = Mapper.getInstance().map(entity);
+            GenericDto dto = (GenericDto) Mapper.getInstance().map(entity).get();
             return Optional.ofNullable(dto);
         } catch (Exception e) {
             log.error("[ Failed to map from entity {} to dto {} [ ENTITY_ID: {} ] Error : {}", entity.getClass().getName(), dtoClass.getName(), entity.toString(), e);

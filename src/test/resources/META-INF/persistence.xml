@@ -15,6 +15,7 @@
         <properties>
             <!-- CONFIGURE LUCENE -->
             <property name="hibernate.search.backend.directory.root" value="target/lucene/indexes"/>
+            <property name="hibernate.search.backend.analysis.configurer" value="class:se.backede.generics.persistence.search.NegodLuceneAnalysisConfigurer"/>
 
             <!-- Configuring JDBC properties -->
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:test;INIT=RUNSCRIPT FROM 'classpath:createTables.sql';"/>

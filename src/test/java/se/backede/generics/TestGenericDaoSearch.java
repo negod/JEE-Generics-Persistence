@@ -28,6 +28,7 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import se.backede.generics.persistence.search.SearchMatch;
 
 /**
  *
@@ -145,7 +146,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
     }
 
     @Test
-    public void testSearchServiceEntityNotWildcard() throws DaoException, DaoException, ConstraintException {
+    public void testSearchServiceEntityExactMatch() throws DaoException, DaoException, ConstraintException {
 
         clearDb();
 
@@ -161,7 +162,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
 
         //Try wildcard search with one letter
         String SEARCHFIELD = "name";
-        String SEARCHWORD = "n*";
+        String SEARCHWORD = "name2";
         Integer LIST_SIZE = 100;
         Integer PAGE = 0;
 
@@ -170,12 +171,13 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         searchFields.add(SEARCHFIELD);
 
         GenericFilter filter = ServiceEntitiesMock.getGenericFilter(searchFields, SEARCHWORD, LIST_SIZE, PAGE);
+        filter.setSearchMatch(SearchMatch.EXACT_MATCH);
         Optional<Set<ServiceEntity>> search = search(filter);
 
         assert search.isPresent();
         Set<ServiceEntity> searchRerult = search.get();
 
-        assertEquals("Size is not 3", 3, searchRerult.size());
+        assertEquals("Size is not 1", 1, searchRerult.size());
 
         //Try with Capital letter 
         filter.setGlobalSearchWord(StringUtils.capitalize(SEARCHWORD));
@@ -184,7 +186,7 @@ public class TestGenericDaoSearch extends ServiceEntityDao {
         assert search.isPresent();
         searchRerult = search.get();
 
-        assertEquals("Size is not 3", 3, searchRerult.size());
+        assertEquals("Size is not 1", 1, searchRerult.size());
 
         //Exclude wildcard
         filter.setGlobalSearchWord("name");

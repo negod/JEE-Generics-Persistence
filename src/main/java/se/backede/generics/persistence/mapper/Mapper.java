@@ -5,6 +5,7 @@
  */
 package se.backede.generics.persistence.mapper;
 
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import se.backede.generics.persistence.dto.GenericDto;
 import se.backede.generics.persistence.entity.GenericEntity;
@@ -24,12 +25,14 @@ public class Mapper<D extends GenericDto, E extends GenericEntity> {
         return INSTANCE;
     }
 
-    protected GenericDto map(GenericEntity entity) {
-        return GenericMapper.INSTANCE.entityToDto(entity);
+    protected Optional<GenericDto> map(GenericEntity entity) {
+        //return Optional.of(GenericMapper.INSTANCE.mapFromDtoToEntity(entity));
+        return Optional.empty();
     }
 
-    protected GenericEntity map(GenericDto dto) {
-        return GenericMapper.INSTANCE.dtoToEntity(dto);
+    protected Optional<GenericEntity> map(GenericDto dto) {
+        //return Optional.of(GenericMapper.INSTANCE.mapFromEntityToDto(dto));
+        return Optional.empty();
     }
 
 }

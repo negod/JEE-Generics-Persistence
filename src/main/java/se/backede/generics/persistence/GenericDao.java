@@ -1,6 +1,5 @@
 package se.backede.generics.persistence;
 
-import se.backede.generics.persistence.entity.DefaultCacheNames;
 import se.backede.generics.persistence.exception.DaoException;
 import se.backede.generics.persistence.search.GenericFilter;
 import se.backede.generics.persistence.search.Pagination;
@@ -30,10 +29,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.ehcache.Cache;
-import org.ehcache.CacheManager;
 import org.ehcache.config.CacheConfiguration;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
-import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.hibernate.Session;
 import org.hibernate.cache.CacheException;
@@ -42,10 +39,8 @@ import org.hibernate.search.engine.search.query.SearchResult;
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.massindexing.MassIndexer;
 import org.hibernate.search.mapper.orm.session.SearchSession;
-import se.backede.generics.persistence.dto.GenericDto;
 import se.backede.generics.persistence.entity.GenericEntity;
 import se.backede.generics.persistence.entity.GenericEntity_;
-import se.backede.generics.persistence.mapper.GenericMapper;
 
 /**
  *
@@ -64,8 +59,6 @@ public abstract class GenericDao<T extends GenericEntity> {
 
     public abstract EntityManager getEntityManager(String name);
 
-    CacheManager cacheManager;
-
     Session hibernateSession;
 
     /**
@@ -77,10 +70,6 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
         this.className = entityClass.getSimpleName();
         this.searchFields.addAll(getSearchFieldsFromCache());
-
-        cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
-        cacheManager.init();
-
         log.trace("Instantiating DONE for GenericDao. Entity class: {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
     }
 
@@ -102,7 +91,7 @@ public abstract class GenericDao<T extends GenericEntity> {
         log.trace("Getting SearchFields for class: {} [ DatabaseLayer ] method:getSearchFieldsFromCache", entityClass.getSimpleName());
         try {
 
-            Cache<Class, Set> cache = cacheManager.getCache(className, Class.class, Set.class);
+            Cache<Class, Set> cache = CacheHelper.getInstance().getSearchFieldCache();
 
             if (cache != null) {
                 if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
@@ -191,7 +180,7 @@ public abstract class GenericDao<T extends GenericEntity> {
     }
 
     private Optional<Class<?>> getEntityClassToUpdate(String objectName) {
-        Cache<Class, Map> cache = cacheManager.getCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, Class.class, Map.class);
+        Cache<Class, Map> cache = CacheHelper.getInstance().getEnrityRegistryCache();
         if (cache.containsKey(entityClass)) {
             HashMap<String, Class> cachedData = (HashMap<String, Class>) cache.get(entityClass);;
             Class<?> entityClassToUpdate = cachedData.get(objectName);
@@ -287,9 +276,10 @@ public abstract class GenericDao<T extends GenericEntity> {
     public Optional<T> update(T entity) {
         log.debug("Updating entity of type {} with values {} [ DatabaseLayer ] method:update", entityClass.getSimpleName(), entity.toString());
         return getById(entity.getId()).map(entityToUpdate -> {
-            GenericDto entityToDto = GenericMapper.INSTANCE.entityToDto(entity);
-            entityToDto.setUpdatedDate(new Date());
-            return Optional.ofNullable(getEntityManager().merge(entityToUpdate));
+            getEntityManager().detach(entityToUpdate);
+            entity.setId(entityToUpdate.getId());
+            entity.setUpdatedDate(new Date());
+            return Optional.ofNullable(getEntityManager().merge(entity));
         }).orElse(Optional.empty());
     }
 
@@ -416,15 +406,11 @@ public abstract class GenericDao<T extends GenericEntity> {
                 switch (filter.getSearchMatch()) {
                     case EXACT_MATCH ->
                         result = searchSession.search(entityClass).where(f -> f.match()
-                                .fields((String[]) filter.getSearchFields().toArray())
-                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
-                    case STANDARD ->
-                        result = searchSession.search(entityClass).where(f -> f.match()
-                                .fields((String[]) filter.getSearchFields().toArray())
+                                .fields(keys)
                                 .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
                     case WILDCARD ->
-                        result = searchSession.search(entityClass).where(f -> f.match()
-                                .fields((String[]) filter.getSearchFields().toArray())
+                        result = searchSession.search(entityClass).where(f -> f.wildcard()
+                                .fields(keys)
                                 .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
                     default ->
                         throw new AssertionError();

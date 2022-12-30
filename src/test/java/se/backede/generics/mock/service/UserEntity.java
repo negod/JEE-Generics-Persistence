@@ -38,7 +38,7 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @EqualsAndHashCode
 public class UserEntity extends GenericEntity {
 
-    @FullTextField
+    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
