@@ -5,23 +5,20 @@
  */
 package se.backede.generics.mock.service;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import se.backede.generics.mock.service.constants.EntityConstants;
 import se.backede.generics.persistence.entity.GenericEntity;
 import java.util.HashSet;
 import java.util.Set;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 
 /**
  *
@@ -31,14 +28,11 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @Entity
 @Getter
 @Setter
-@Indexed
 public class DomainEntity extends GenericEntity {
 
-    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
-    @IndexedEmbedded(includeDepth = 3)
     @OneToMany(mappedBy = "domain", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = "domain.services")
     private Set<ServiceEntity> services = new HashSet<>();

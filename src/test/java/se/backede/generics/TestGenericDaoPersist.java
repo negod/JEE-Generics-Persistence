@@ -5,10 +5,9 @@
  */
 package se.backede.generics;
 
-import java.util.List;
+import jakarta.persistence.EntityManager;
 import java.util.Optional;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

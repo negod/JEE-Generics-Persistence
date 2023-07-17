@@ -4,8 +4,8 @@
  */
 package se.backede.generics.persistence.entity;
 
+import jakarta.persistence.metamodel.SingularAttribute;
 import java.util.Date;
-import javax.persistence.metamodel.SingularAttribute;
 
 /**
  *

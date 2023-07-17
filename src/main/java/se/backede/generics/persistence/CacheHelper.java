@@ -22,8 +22,6 @@ public class CacheHelper {
 
     private final CacheManager cacheManager;
     @Getter
-    private final Cache<Class, Set> searchFieldCache;
-    @Getter
     private final Cache<Class, Map> enrityRegistryCache;
     @Getter
     private static CacheHelper instance;
@@ -31,12 +29,6 @@ public class CacheHelper {
     private CacheHelper() {
         cacheManager = CacheManagerBuilder.newCacheManagerBuilder().build();
         cacheManager.init();
-
-        searchFieldCache = cacheManager
-                .createCache(DefaultCacheNames.SEARCH_FIELD_CACHE, CacheConfigurationBuilder
-                        .newCacheConfigurationBuilder(
-                                Class.class, Set.class,
-                                ResourcePoolsBuilder.heap(10)));
 
         enrityRegistryCache = cacheManager
                 .createCache(DefaultCacheNames.ENTITY_REGISTRY_CACHE, CacheConfigurationBuilder

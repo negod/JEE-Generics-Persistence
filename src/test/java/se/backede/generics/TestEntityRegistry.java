@@ -5,6 +5,7 @@
  */
 package se.backede.generics;
 
+import jakarta.persistence.EntityManager;
 import se.backede.generics.mock.service.DomainEntity;
 import se.backede.generics.mock.service.ServiceDetailEntity;
 import se.backede.generics.mock.service.ServiceEntity;
@@ -15,7 +16,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.StreamSupport;
-import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.ehcache.Cache;
 
@@ -36,23 +36,6 @@ public class TestEntityRegistry extends EntityRegistry {
 
     public TestEntityRegistry() {
         super.registerEnties();
-        super.registerSearchFields();
-        super.registerSearchFieldCaches();
-    }
-
-    @Test
-    public void test() {
-        Cache<Class, Set> searchFieldCache = CacheHelper.getInstance().getSearchFieldCache();
-
-        assert searchFieldCache != null;
-
-        long cacheSize = StreamSupport.stream(searchFieldCache.spliterator(), false).count();
-
-        assert cacheSize == 4;
-        assert searchFieldCache.containsKey(ServiceEntity.class);
-        assert searchFieldCache.containsKey(DomainEntity.class);
-        assert searchFieldCache.containsKey(ServiceDetailEntity.class);
-        assert searchFieldCache.containsKey(UserEntity.class);
     }
 
     @Test

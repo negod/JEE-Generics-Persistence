@@ -5,8 +5,8 @@
  */
 package se.backede.generics.persistence;
 
+import jakarta.persistence.EntityManager;
 import se.backede.generics.mock.service.UserEntity;
-import javax.persistence.EntityManager;
 
 /**
  *

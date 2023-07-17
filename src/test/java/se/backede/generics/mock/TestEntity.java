@@ -5,11 +5,10 @@
  */
 package se.backede.generics.mock;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import se.backede.generics.persistence.entity.GenericEntity;
-import javax.persistence.Entity;
-import javax.persistence.Table;
 import lombok.Data;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
 
 /**
  *
@@ -20,16 +19,10 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 @Table(name = "TEST_ENTITY", schema = "TEST")
 public class TestEntity extends GenericEntity {
 
-    @FullTextField(name = "name")
     private String name;
     private Integer integerValue;
     private Double doubleValue;
     private Long longValue;
     private Boolean booleanValue;
 
-//    @IndexedEmbedded
-//    private TestEntityEmbedded entity;
-//
-//    @IndexedEmbedded
-//    private Set<TestEntityEmbedded> entitySet;
 }

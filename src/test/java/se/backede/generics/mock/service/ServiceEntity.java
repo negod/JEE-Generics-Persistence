@@ -1,32 +1,29 @@
 package se.backede.generics.mock.service;
 
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import se.backede.generics.mock.service.constants.EntityConstants;
 import se.backede.generics.persistence.entity.GenericEntity;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToOne;
-import javax.persistence.PrePersist;
-import javax.persistence.Table;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 
 /**
  *
@@ -38,26 +35,21 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @Setter
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true, exclude = "users")
-@Indexed
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.READ_WRITE, region = EntityConstants.SERVICE)
 public class ServiceEntity extends GenericEntity {
 
-    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
-    @IndexedEmbedded()
     @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "detail_id", referencedColumnName = "id")
     private ServiceDetailEntity detail;
 
-    @IndexedEmbedded(includeDepth = 3)
     @JoinColumn(name = "domain_id", referencedColumnName = "id")
     @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private DomainEntity domain;
 
-    @IndexedEmbedded(includeDepth = 3)
     @JoinTable(name = "service_user",
             joinColumns = {
                 @JoinColumn(name = "service_id", referencedColumnName = "id")},

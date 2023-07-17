@@ -5,25 +5,18 @@
  */
 package se.backede.generics.mock.service;
 
+import jakarta.persistence.Cacheable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 import se.backede.generics.mock.service.constants.EntityConstants;
 import se.backede.generics.persistence.entity.GenericEntity;
-import javax.persistence.Cacheable;
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.MapsId;
-import javax.persistence.OneToOne;
-import javax.persistence.PrePersist;
-import javax.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.AssociationInverseSide;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
-import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmbedded;
 
 /**
  *
@@ -33,16 +26,13 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.IndexedEmb
 @Entity
 @Getter
 @Setter
-@Indexed
 @Cacheable
 @Cache(usage = CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region = EntityConstants.SERVICE_DETAIL)
 public class ServiceDetailEntity extends GenericEntity {
 
-    @FullTextField(analyzer = "generic")
     @Column(name = "name", insertable = true, unique = true)
     private String name;
 
-    @IndexedEmbedded(includeDepth = 1)
     @OneToOne(mappedBy = "detail")
     private ServiceEntity service;
 
