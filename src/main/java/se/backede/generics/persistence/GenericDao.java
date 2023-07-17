@@ -31,12 +31,10 @@ import org.ehcache.config.CacheConfiguration;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.hibernate.Session;
-import org.hibernate.cache.CacheException;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import se.backede.generics.persistence.entity.GenericEntity;
 import se.backede.generics.persistence.entity.GenericEntity_;
-import se.backede.generics.persistence.search.Search;
 
 /**
  *
@@ -104,7 +102,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param entity The entity to persist
      * @return The persisted entity
-     * @throws DaoException
      */
     public Optional<T> persist(T entity) {
         log.debug("Persisting entity of type {} with values {} [ DatabaseLayer ] method:persist", entityClass.getSimpleName(), entity.toString());
@@ -124,7 +121,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param entity The entity to persist
      * @return The persisted entity
-     * @throws DaoException
      */
     @Transactional
     public Optional<Boolean> persist(Set<T> entity) {
@@ -143,7 +139,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param id
      * @param update
      * @return
-     * @throws DaoException
      */
     public Boolean update(String id, Set<ObjectUpdate> update) {
         log.debug("Updating entitylist of type {} with values {} [ DatabaseLayer ] method:update", entityClass.getSimpleName(), update.toString());
@@ -169,7 +164,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param id The id of the Entity to update
      * @param updateInstructions The data of the object to ADD, REMOVE or UPDATE
      * @return
-     * @throws DaoException
      */
     public Optional<T> update(String id, ObjectUpdate updateInstructions) {
         log.debug("Updating Entity {} with id {} [ DatabaseLayer ] method:update", entityClass.getSimpleName(), id);
@@ -202,6 +196,16 @@ public abstract class GenericDao<T extends GenericEntity> {
         return Optional.empty();
     }
 
+    /**
+     * 
+     * @param field
+     * @param updateEntity
+     * @param entity
+     * @param update
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws AssertionError 
+     */
     private void invokeGenericObjectData(Field field, Optional updateEntity, Optional<T> entity, ObjectUpdate update) throws IllegalArgumentException, IllegalAccessException, AssertionError {
         log.trace("Invoking ObjectData on entity {} with Object {} [ DatabaseLayer ] method:invokeGenericObjectData", entityClass.getSimpleName(), entity.get().getClass().getSimpleName());
         switch (update.getType()) {
@@ -217,6 +221,19 @@ public abstract class GenericDao<T extends GenericEntity> {
         }
     }
 
+    /**
+     * 
+     * @param field
+     * @param updateEntity
+     * @param entity
+     * @param update
+     * @throws InvocationTargetException
+     * @throws SecurityException
+     * @throws IllegalAccessException
+     * @throws IllegalArgumentException
+     * @throws AssertionError
+     * @throws NoSuchMethodException 
+     */
     private void invokeGenericSetData(Field field, Optional updateEntity, Optional<T> entity, ObjectUpdate update) throws InvocationTargetException, SecurityException, IllegalAccessException, IllegalArgumentException, AssertionError, NoSuchMethodException {
         log.trace("Invoking ListData on entity {} with Object {} [ DatabaseLayer ] method:invokeGenericSetData", entityClass.getSimpleName(), entity.get().getClass().getSimpleName());
 
@@ -276,7 +293,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param entity The entity to delete
      * @return true or false depenent on the success of the deletion
-     * @throws DaoException
      */
     protected Optional<Boolean> delete(T entity) {
         log.debug("Deleting entity of type {} with values {} [ DatabaseLayer ] method:delete ( with whole entity )", entityClass.getSimpleName(), entity.toString());
@@ -315,7 +331,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param id The external id (GUID) of the entity
      * @return The entity that matches the id
-     * @throws DaoException
      */
     private Optional<T> getById(String id, Class clazz) {
         log.debug("Getting entity (Generic method) int DAO for {} with id {} [ DatabaseLayer ] method:getById ( with id and class )", entityClass.getSimpleName(), id);
@@ -338,7 +353,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param pagination the pagination for the query
      * @return All perssted entities
-     * @throws DaoException
      */
     public Optional<Set<T>> getAll(Pagination pagination) {
         log.debug("Getting all values of type {} with pagination {} [ DatabaseLayer ] method:getAll ( with pagination )", entityClass.getSimpleName(), pagination);
@@ -384,8 +398,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * @param query The query to executeTransaction
      * @return The queried entity
-     * @throws DaoException
-     * @throws se.backede.generics.persistence.exception.NotFoundException
      */
     public Optional<T> get(CriteriaQuery<T> query) {
         log.trace("Getting entity of type {} [ DatabaseLayer ] method:get", entityClass.getSimpleName());
@@ -400,7 +412,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @param query The query to executeTransaction
      * @param pagination
      * @return The queried entity
-     * @throws DaoException
      */
     protected Optional<List<T>> executeTypedQueryList(TypedQuery<T> query, Pagination pagination) throws DaoException {
         log.trace("Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with pagination )", entityClass.getSimpleName(), query.unwrap(Query.class).getQueryString());
