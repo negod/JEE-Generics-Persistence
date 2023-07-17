@@ -150,7 +150,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.10.1</version> <!-- this is critical -->
+                <version>3.11.0</version> <!-- this is critical -->
                 <configuration>
                     <source>${maven.compiler.source}</source> <!-- depending on your project -->
                     <target>${maven.compiler.target}</target> 
