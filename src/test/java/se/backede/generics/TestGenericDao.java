@@ -5,6 +5,7 @@
  */
 package se.backede.generics;
 
+import jakarta.persistence.EntityManager;
 import se.backede.generics.mock.ServiceEntitiesMock;
 import se.backede.generics.mock.service.DomainEntity;
 import se.backede.generics.mock.service.ServiceEntity;
@@ -22,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,17 +49,6 @@ public class TestGenericDao extends ServiceEntityDao {
     @BeforeClass
     public static void init() {
         CACHE = new CacheInitializer();
-    }
-
-    @Test
-    public void assertFields() throws DaoException {
-        log.debug("Asserting fields");
-        assert getEntityClass().equals(ServiceEntity.class);
-        assert getClassName().equals(ServiceEntity.class.getSimpleName());
-
-        Set<String> searchFields = getSearchFields();
-
-        assert searchFields.equals(new HashSet<>(Arrays.asList(new String[]{"detail.name", "users.name", "domain.name", "name"})));
     }
 
     @Test

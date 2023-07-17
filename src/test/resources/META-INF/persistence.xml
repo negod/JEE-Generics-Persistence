@@ -12,11 +12,7 @@
         <class>se.backede.generics.mock.service.DomainEntity</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
 
-        <properties>
-            <!-- CONFIGURE LUCENE -->
-            <property name="hibernate.search.backend.directory.root" value="target/lucene/indexes"/>
-            <property name="hibernate.search.backend.analysis.configurer" value="class:se.backede.generics.persistence.search.NegodLuceneAnalysisConfigurer"/>
-
+        <properties>          
             <!-- Configuring JDBC properties -->
             <property name="javax.persistence.jdbc.url" value="jdbc:h2:mem:test;INIT=RUNSCRIPT FROM 'classpath:createTables.sql';"/>
             <property name="javax.persistence.jdbc.driver" value="org.h2.Driver"/>

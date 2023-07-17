@@ -5,9 +5,8 @@
  */
 package se.backede.generics.persistence;
 
-import se.backede.generics.persistence.GenericDao;
+import jakarta.persistence.EntityManager;
 import se.backede.generics.mock.service.ServiceEntity;
-import javax.persistence.EntityManager;
 
 /**
  *

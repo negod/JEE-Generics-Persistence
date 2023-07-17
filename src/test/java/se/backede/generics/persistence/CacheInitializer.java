@@ -5,8 +5,8 @@
  */
 package se.backede.generics.persistence;
 
+import jakarta.persistence.EntityManager;
 import se.backede.generics.persistence.entity.EntityRegistry;
-import javax.persistence.EntityManager;
 
 /**
  *
@@ -21,8 +21,6 @@ public class CacheInitializer extends EntityRegistry {
 
     public CacheInitializer() {
         super.registerEnties();
-        super.registerSearchFields();
-        super.registerSearchFieldCaches();
     }
 
 }

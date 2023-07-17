@@ -4,23 +4,19 @@ module se.backede.generics.persistence {
     requires static org.mapstruct;
 
     requires java.xml.bind;
-    requires java.transaction;
-    requires java.persistence;
     requires java.annotation;
+    requires java.validation;
+    requires jakarta.persistence;
+    requires jakarta.transaction;
 
     requires org.apache.commons.lang3;
     requires org.apache.commons.collections4;
 
     requires org.slf4j;
-    requires java.validation;
 
     requires ehcache;
 
     requires org.hibernate.orm.core;
-    requires org.hibernate.search.engine;
-    requires org.hibernate.search.mapper.orm;
-    requires org.hibernate.search.mapper.pojo;
-    requires org.hibernate.search.backend.lucene;
 
     exports se.backede.generics.persistence;
     exports se.backede.generics.persistence.entity;

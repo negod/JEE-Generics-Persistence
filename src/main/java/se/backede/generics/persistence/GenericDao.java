@@ -1,7 +1,13 @@
 package se.backede.generics.persistence;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+import jakarta.transaction.Transactional;
 import se.backede.generics.persistence.exception.DaoException;
-import se.backede.generics.persistence.search.GenericFilter;
 import se.backede.generics.persistence.search.Pagination;
 import se.backede.generics.persistence.update.ObjectUpdate;
 import java.lang.reflect.Field;
@@ -17,16 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
-import javax.persistence.EntityManager;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-import javax.transaction.Transactional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.ehcache.Cache;
 import org.ehcache.config.CacheConfiguration;
@@ -35,12 +33,10 @@ import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.hibernate.Session;
 import org.hibernate.cache.CacheException;
 import org.hibernate.exception.ConstraintViolationException;
-import org.hibernate.search.engine.search.query.SearchResult;
-import org.hibernate.search.mapper.orm.Search;
-import org.hibernate.search.mapper.orm.massindexing.MassIndexer;
-import org.hibernate.search.mapper.orm.session.SearchSession;
+import org.hibernate.query.Query;
 import se.backede.generics.persistence.entity.GenericEntity;
 import se.backede.generics.persistence.entity.GenericEntity_;
+import se.backede.generics.persistence.search.Search;
 
 /**
  *
@@ -69,7 +65,6 @@ public abstract class GenericDao<T extends GenericEntity> {
         this.entityClass = extractEntityClass();
         log.trace("Instantiating GenericDao for entity class {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
         this.className = entityClass.getSimpleName();
-        this.searchFields.addAll(getSearchFieldsFromCache());
         log.trace("Instantiating DONE for GenericDao. Entity class: {} [ DatabaseLayer ] method:constructor", entityClass.getSimpleName());
     }
 
@@ -85,27 +80,6 @@ public abstract class GenericDao<T extends GenericEntity> {
             }
         }
         return (Class<T>) parametrizedType.getActualTypeArguments()[0];
-    }
-
-    private Set<String> getSearchFieldsFromCache() {
-        log.trace("Getting SearchFields for class: {} [ DatabaseLayer ] method:getSearchFieldsFromCache", entityClass.getSimpleName());
-        try {
-
-            Cache<Class, Set> cache = CacheHelper.getInstance().getSearchFieldCache();
-
-            if (cache != null) {
-                if (Optional.ofNullable(cache.get(entityClass)).isPresent()) {
-                    return (HashSet<String>) cache.get(entityClass);
-                } else {
-                    log.debug("Cache for entityclass {} not present in cache", entityClass.getCanonicalName());
-                }
-            } else {
-                log.error("CACHE is null!");
-            }
-        } catch (CacheException | ClassCastException | IllegalStateException ex) {
-            log.error("Error when getting search fields for class {} [ DatabaseLayer ] ErrorMessage:{}", entityClass.getSimpleName(), ex);
-        }
-        return new HashSet<>();
     }
 
     /**
@@ -362,77 +336,6 @@ public abstract class GenericDao<T extends GenericEntity> {
      *
      * Gets all entities that are persisted to the database
      *
-     * @param filter The filter for the search
-     * @return All persisted entities
-     * @throws DaoException
-     */
-    @Transactional
-    public Optional<Set<T>> search(GenericFilter filter) {
-        log.debug("Getting all values of type {} and filter {} [ DatabaseLayer ] method:search ", entityClass.getSimpleName(), filter.toString());
-        try {
-
-            SearchSession searchSession = Search.session(getEntityManager());
-
-            SearchResult<T> result;
-
-            String[] keys = filter.getSearchFields().toArray(new String[filter.getSearchFields().size()]);
-            Optional<String> searchWord = Optional.ofNullable(filter.getGlobalSearchWord());
-            Optional<Pagination> pagination = Optional.ofNullable(filter.getPagination());
-
-            int firstRecord = 1;
-            int lastRecord = 20;
-
-            if (!ArrayUtils.isEmpty(keys) && searchWord.isPresent()) {
-
-                String[] specialChars = {"-", "!", "?"};
-
-                String keyword = searchWord.get();
-
-                for (String specialChar : specialChars) {
-                    if (keyword.contains(specialChar)) {
-                        keyword = keyword.replace(specialChar, "\\" + specialChar);
-                    }
-                }
-
-                if (pagination.isPresent()) {
-                    firstRecord = pagination.get().getPage() * pagination.get().getListSize();
-                    lastRecord = firstRecord + pagination.get().getListSize();
-                } else {
-                    log.debug("Pagination not present in query returning all data");
-                }
-
-                log.trace("Executing Lucene wildcard search, KEYS: {} VALUE: {} [ DatabaseLayer ] method:search", keys, searchWord.get().toLowerCase());
-
-                switch (filter.getSearchMatch()) {
-                    case EXACT_MATCH ->
-                        result = searchSession.search(entityClass).where(f -> f.match()
-                                .fields(keys)
-                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
-                    case WILDCARD ->
-                        result = searchSession.search(entityClass).where(f -> f.wildcard()
-                                .fields(keys)
-                                .matching(filter.getGlobalSearchWord())).fetch(firstRecord, lastRecord);
-                    default ->
-                        throw new AssertionError();
-                }
-
-                Set<T> resultList = new HashSet<T>(result.hits());
-                return Optional.ofNullable(resultList);
-            } else {
-                log.error("Either search fields or search word or all is not present, aborting search [ DatabaseLayer ] method:search, "
-                        + "Present? [Pagination:{} SearchWord:{} SearchFields:{} ]", pagination.isPresent(), searchWord.isPresent(), ArrayUtils.isEmpty(keys));
-                return Optional.empty();
-            }
-        } catch (Exception e) {
-            log.error(" [getAll] Error when getting filtered list in Generic Dao [ DatabaseLayer ]");
-            return Optional.empty();
-        }
-    }
-
-    /**
-     *
-     * Gets all entities that are persisted to the database
-     *
      * @param pagination the pagination for the query
      * @return All perssted entities
      * @throws DaoException
@@ -500,7 +403,7 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @throws DaoException
      */
     protected Optional<List<T>> executeTypedQueryList(TypedQuery<T> query, Pagination pagination) throws DaoException {
-        log.trace("Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with pagination )", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
+        log.trace("Executing TypedQuery ( Filtered List ) for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQueryList ( with pagination )", entityClass.getSimpleName(), query.unwrap(Query.class).getQueryString());
         try {
 
             if (Optional.ofNullable(pagination).isPresent()) {
@@ -534,33 +437,15 @@ public abstract class GenericDao<T extends GenericEntity> {
      * @return The queried entity list
      */
     protected Optional<T> executeTypedQuery(TypedQuery<T> query) {
-        log.trace("Executing TypedQuery ( Single Entity ) query for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQuery", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString());
+        log.trace("Executing TypedQuery ( Single Entity ) query for type {} with query: [ {} ] [ DatabaseLayer ] method:executeTypedQuery", entityClass.getSimpleName(), query.unwrap(Query.class).getQueryString());
         try {
             return Optional.ofNullable(query.getSingleResult());
         } catch (NoResultException ex) {
             log.debug("No result for TypedQuery [ Get single entity ] for type {} [ DatabaseLayer ]", entityClass.getSimpleName(), ex.getMessage());
         } catch (Exception e) {
-            log.error("Error when executing TypedQuery [ Get single entity ] for type {} [ DatabaseLayer ] QUERY: {}", entityClass.getSimpleName(), query.unwrap(org.hibernate.Query.class).getQueryString(), e);
+            log.error("Error when executing TypedQuery [ Get single entity ] for type {} [ DatabaseLayer ] QUERY: {}", entityClass.getSimpleName(), query.unwrap(Query.class).getQueryString(), e);
         }
         return Optional.empty();
-    }
-
-    /**
-     *
-     * @return
-     */
-    public Boolean indexEntity() {
-        log.debug("Starting Lucene indexing of type {} [ DatabaseLayer ] method:indexEntity", entityClass.getSimpleName());
-        try {
-            SearchSession searchSession = Search.session(getEntityManager());
-            MassIndexer indexer = searchSession.massIndexer(entityClass).threadsToLoadObjects(7);
-            indexer.startAndWait();
-            log.debug("SUCCESS! Indexing started....... returning {} [ DatabaseLayer ]", this.className);
-        } catch (InterruptedException ex) {
-            log.error("Failure when indexing {} [ DatabaseLayer ] ErrorMessage: {}", this.className, ex);
-            return Boolean.FALSE;
-        }
-        return Boolean.TRUE;
     }
 
     public synchronized Optional<Boolean> startTransaction() {
